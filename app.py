@@ -41,7 +41,7 @@ PLOTLY_TEMA = {
     }
 }
 
-# ========== CONFIGURAÇÕES DO AZURE ==========
+# ========== CONFIGURAÇÕES DO AZURE (via Streamlit Secrets) ==========
 TENANT_ID = st.secrets["TENANT_ID"]
 CLIENT_ID = st.secrets["CLIENT_ID"]
 CLIENT_SECRET = st.secrets["CLIENT_SECRET"]
@@ -54,27 +54,157 @@ EXCEL_ONLINE_URL = "https://agenciaideatore-my.sharepoint.com/:x:/r/personal/cri
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(
-    page_title="Dashboard Cocred - Id",
+    page_title="Dashboard Cocred",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado
+# ========== CSS PERSONALIZADO COM SUPORTE A DARK THEME ==========
 st.markdown(f"""
 <style>
-    h1, h2, h3 {{ color: {CORES['verde_escuro']} !important; }}
-    .stMetric {{ background-color: {CORES['branco']}; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['turquesa']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-    .stButton button {{ background-color: {CORES['turquesa']}; color: white; border: none; border-radius: 5px; padding: 10px 20px; font-weight: bold; transition: all 0.3s; }}
-    .stButton button:hover {{ background-color: {CORES['roxo']}; }}
-    .stLinkButton button {{ background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']}); color: white; font-size: 18px; padding: 15px; border-radius: 10px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-    .stTabs [data-baseweb="tab-list"] {{ gap: 8px; }}
-    .stTabs [data-baseweb="tab"] {{ background-color: {CORES['cinza_claro']}; border-radius: 5px 5px 0 0; padding: 10px 20px; color: {CORES['texto_escuro']}; }}
-    .stTabs [aria-selected="true"] {{ background-color: {CORES['turquesa']}; color: white; }}
-    .footer {{ color: {CORES['cinza_escuro']}; font-size: 12px; text-align: center; padding: 20px; border-top: 1px solid {CORES['cinza_claro']}; }}
-    .tooltip {{ position: relative; display: inline-block; cursor: help; }}
-    .tooltip .tooltiptext {{ visibility: hidden; width: 200px; background-color: {CORES['verde_escuro']}; color: white; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }}
-    .tooltip:hover .tooltiptext {{ visibility: visible; opacity: 1; }}
+    /* Cabeçalhos - se adaptam ao tema */
+    h1, h2, h3 {{
+        color: {CORES['verde_escuro']} !important;
+    }}
+    /* No dark theme, os cabeçalhos ficam mais claros */
+    @media (prefers-color-scheme: dark) {{
+        h1, h2, h3 {{
+            color: {CORES['verde_claro']} !important;
+        }}
+    }}
+    
+    /* Métricas - funcionam em ambos os temas */
+    .stMetric {{
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 15px;
+        border-radius: 10px;
+        border-left: 5px solid {CORES['turquesa']};
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        backdrop-filter: blur(5px);
+    }}
+    
+    /* Botões */
+    .stButton button {{
+        background-color: {CORES['turquesa']};
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 20px;
+        font-weight: bold;
+        transition: all 0.3s;
+    }}
+    .stButton button:hover {{
+        background-color: {CORES['roxo']};
+        color: white;
+    }}
+    
+    /* Botão primário (Excel Online) */
+    .stLinkButton button {{
+        background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']});
+        color: white;
+        font-size: 18px;
+        padding: 15px;
+        border-radius: 10px;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }}
+    
+    /* Cards de informação - adaptáveis */
+    .info-card {{
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 10px 0;
+        color: inherit;
+    }}
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {{
+        gap: 8px;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        background-color: rgba(128, 128, 128, 0.1);
+        border-radius: 5px 5px 0 0;
+        padding: 10px 20px;
+        color: inherit;
+    }}
+    .stTabs [aria-selected="true"] {{
+        background-color: {CORES['turquesa']} !important;
+        color: white !important;
+    }}
+    
+    /* Sidebar */
+    .css-1d391kg {{
+        background-color: rgba(0, 0, 0, 0.05);
+    }}
+    
+    /* Alertas e mensagens */
+    .stAlert {{
+        background-color: {CORES['verde_claro']}20;
+        border-left-color: {CORES['verde_claro']};
+        color: inherit;
+    }}
+    
+    /* Links */
+    a {{
+        color: {CORES['turquesa']};
+        text-decoration: none;
+    }}
+    a:hover {{
+        color: {CORES['roxo']};
+    }}
+    
+    /* Rodapé */
+    .footer {{
+        color: rgba(128, 128, 128, 0.8);
+        font-size: 12px;
+        text-align: center;
+        padding: 20px;
+        border-top: 1px solid rgba(128, 128, 128, 0.2);
+    }}
+    
+    /* Cards das métricas na seção "Entendendo as Métricas" */
+    .metric-card {{
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 5px;
+        color: inherit;
+        height: 150px;
+    }}
+    .metric-card h5 {{
+        margin: 0;
+        font-size: 16px;
+    }}
+    .metric-card p {{
+        font-size: 12px;
+        margin-top: 5px;
+        color: inherit;
+    }}
+    
+    /* Tabelas */
+    .stDataFrame {{
+        background-color: transparent;
+    }}
+    
+    /* No dark theme, ajustes adicionais */
+    @media (prefers-color-scheme: dark) {{
+        body {{
+            color: #ffffff;
+        }}
+        .stMarkdown p {{
+            color: #cccccc;
+        }}
+        .metric-card p {{
+            color: #cccccc;
+        }}
+        .st-bb {{
+            background-color: #1e1e1e;
+        }}
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -181,7 +311,7 @@ def exportar_excel_completo(df):
     
     return output
 
-# ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES) ==========
+# ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES E DARK THEME) ==========
 def dashboard_metricas(df):
     """Dashboard com filtros, cards de métricas, descrições e tabela geral"""
     
@@ -300,17 +430,17 @@ def dashboard_metricas(df):
         </div>
         """, unsafe_allow_html=True)
     
-    # ========== DESCRIÇÕES DAS MÉTRICAS ==========
+    # ========== DESCRIÇÕES DAS MÉTRICAS (ADAPTÁVEIS AO TEMA) ==========
     st.markdown("---")
     st.markdown("### 📘 Entendendo as Métricas")
     
     col_desc1, col_desc2, col_desc3, col_desc4, col_desc5 = st.columns(5)
     
     with col_desc1:
-        st.markdown("""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: #00AE9D; margin: 0;'>IMPACTO</h5>
-            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+        st.markdown(f"""
+        <div class='metric-card'>
+            <h5 style='color: {CORES['turquesa']};'>IMPACTO</h5>
+            <p style='margin-top: 5px;'>
                 Número total de impressões ou visualizações da campanha.<br>
                 <strong>Quanto maior, melhor o alcance.</strong>
             </p>
@@ -318,10 +448,10 @@ def dashboard_metricas(df):
         """, unsafe_allow_html=True)
     
     with col_desc2:
-        st.markdown("""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: #49479D; margin: 0;'>INVESTIMENTO</h5>
-            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+        st.markdown(f"""
+        <div class='metric-card'>
+            <h5 style='color: {CORES['roxo']};'>INVESTIMENTO</h5>
+            <p style='margin-top: 5px;'>
                 Valor total gasto na campanha.<br>
                 <strong>Base para cálculo das demais métricas.</strong>
             </p>
@@ -330,13 +460,13 @@ def dashboard_metricas(df):
     
     with col_desc3:
         st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>CPM</h5>
-            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+        <div class='metric-card'>
+            <h5 style='color: {CORES['verde_escuro']}80;'>CPM</h5>
+            <p style='margin-top: 5px;'>
                 <strong>Custo por Mil Impressões</strong><br>
                 Investimento ÷ Impacto × 1000<br>
                 <strong>R$ {cpm:.2f}</strong> por mil visualizações.<br>
-                <span style='color: {"green" if cpm < 10 else "orange" if cpm < 20 else "red"};'>
+                <span style='color: {"#00ff00" if cpm < 10 else "#ffff00" if cpm < 20 else "#ff0000"};'>
                     {'✅ Excelente' if cpm < 10 else '⚠️ Médio' if cpm < 20 else '🔴 Alto'}
                 </span>
             </p>
@@ -345,9 +475,9 @@ def dashboard_metricas(df):
     
     with col_desc4:
         st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>LEADS</h5>
-            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+        <div class='metric-card'>
+            <h5 style='color: {CORES['verde_claro']};'>LEADS</h5>
+            <p style='margin-top: 5px;'>
                 Número total de leads gerados.<br>
                 <strong>Total: {leads:,.0f} leads</strong><br>
                 Taxa de conversão: {(leads/impacto*100) if impacto>0 else 0:.2f}%
@@ -357,13 +487,13 @@ def dashboard_metricas(df):
     
     with col_desc5:
         st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: {CORES['cinza_escuro']}; margin: 0;'>CPL</h5>
-            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+        <div class='metric-card'>
+            <h5 style='color: {CORES['cinza_escuro']}80;'>CPL</h5>
+            <p style='margin-top: 5px;'>
                 <strong>Custo por Lead</strong><br>
                 Investimento ÷ Leads<br>
                 <strong>R$ {cpl:.2f}</strong> por lead.<br>
-                <span style='color: {"green" if cpl < 5 else "orange" if cpl < 10 else "red"};'>
+                <span style='color: {"#00ff00" if cpl < 5 else "#ffff00" if cpl < 10 else "#ff0000"};'>
                     {'✅ Bom' if cpl < 5 else '⚠️ Médio' if cpl < 10 else '🔴 Alto'}
                 </span>
             </p>
@@ -386,28 +516,23 @@ def dashboard_metricas(df):
 
 # ========== ANÁLISE TEMPORAL ==========
 def analise_temporal(df):
-    """Análise ao longo do tempo - VERSÃO CORRIGIDA PARA 'mês da análise'"""
+    """Análise ao longo do tempo com suporte a 'mês da análise'"""
     st.subheader("📈 Análise Temporal")
     
-    # Primeiro, vamos mostrar todas as colunas disponíveis para diagnóstico
     with st.expander("📋 Ver colunas disponíveis"):
         st.write("Colunas no DataFrame:", df.columns.tolist())
     
-    # Identifica colunas de data de forma mais abrangente
+    # Identifica colunas de data
     date_cols = []
     
-    # 1. Primeiro, procura especificamente por "mês da análise"
     if 'mês da análise' in df.columns:
         date_cols.append('mês da análise')
         st.success("✅ Coluna 'mês da análise' encontrada!")
     
-    # 2. Depois, procura por outras colunas que possam ser datas
     for col in df.columns:
-        if col not in date_cols:  # Evita duplicar
-            # Verifica se o nome da coluna sugere data
+        if col not in date_cols:
             if any(x in col.lower() for x in ['data', 'date', 'mês', 'mes', 'ano', 'year']):
                 date_cols.append(col)
-            # Tenta converter para datetime
             else:
                 try:
                     pd.to_datetime(df[col])
@@ -416,37 +541,23 @@ def analise_temporal(df):
                     pass
     
     if not date_cols:
-        st.error("""
-        ⚠️ Nenhuma coluna de data encontrada!
-        
-        As colunas disponíveis são:
-        """ + ", ".join(df.columns.tolist()))
-        
-        # Oferece opção para o usuário selecionar manualmente
-        col_manual = st.selectbox(
-            "Selecione manualmente a coluna que contém a data/mês:",
-            df.columns.tolist()
-        )
-        
+        st.error("Nenhuma coluna de data encontrada!")
+        col_manual = st.selectbox("Selecione manualmente:", df.columns.tolist())
         if col_manual:
             date_cols = [col_manual]
-            st.info(f"Usando coluna: {col_manual}")
     
     if not date_cols:
         return
     
-    # Colunas numéricas
     numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
     
     if not numeric_cols:
         st.warning("Não há colunas numéricas para análise temporal.")
         return
     
-    # Configuração principal
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        # Se 'mês da análise' estiver disponível, já deixa como padrão
         default_data_col = 'mês da análise' if 'mês da análise' in date_cols else date_cols[0]
         data_col = st.selectbox("Coluna de data/mês:", date_cols, index=date_cols.index(default_data_col))
     
@@ -456,23 +567,16 @@ def analise_temporal(df):
     with col3:
         periodo = st.selectbox("Agrupar por:", ['Mês', 'Trimestre', 'Semestre', 'Ano'])
     
-    # Prepara dados
     df_temp = df.copy()
     
-    # Tenta converter a coluna selecionada para datetime
     try:
-        # Se for 'mês da análise' no formato "Janeiro/2024" ou similar
         if data_col == 'mês da análise':
-            # Tenta diferentes formatos comuns
             df_temp['data_analise'] = pd.to_datetime(df_temp[data_col], errors='coerce')
             
-            # Se falhar, tenta extrair mês e ano de texto
             if df_temp['data_analise'].isna().all():
-                # Exemplo: "Janeiro/2024" -> extrai mês e ano
                 df_temp['mes_extraido'] = df_temp[data_col].str.extract(r'([A-Za-zç]+)')
                 df_temp['ano_extraido'] = df_temp[data_col].str.extract(r'(\d{4})')
                 
-                # Mapeia nomes de meses para números
                 meses_map = {
                     'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4,
                     'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8,
@@ -488,7 +592,6 @@ def analise_temporal(df):
         else:
             df_temp['data_analise'] = pd.to_datetime(df_temp[data_col], errors='coerce')
         
-        # Remove linhas com data inválida
         df_temp = df_temp.dropna(subset=['data_analise'])
         
         if len(df_temp) == 0:
@@ -499,7 +602,6 @@ def analise_temporal(df):
         st.error(f"Erro ao processar datas: {str(e)}")
         return
     
-    # Agrupa por período
     if periodo == 'Mês':
         df_temp['periodo'] = df_temp['data_analise'].dt.to_period('M').astype(str)
         titulo = f"Evolução Mensal de {metrica}"
@@ -509,15 +611,13 @@ def analise_temporal(df):
     elif periodo == 'Semestre':
         df_temp['periodo'] = df_temp['data_analise'].dt.to_period('2Q').astype(str)
         titulo = f"Evolução Semestral de {metrica}"
-    else:  # Ano
+    else:
         df_temp['periodo'] = df_temp['data_analise'].dt.year
         titulo = f"Evolução Anual de {metrica}"
     
-    # Agrega
     temporal = df_temp.groupby('periodo')[metrica].sum().reset_index()
     temporal = temporal.sort_values('periodo')
     
-    # ========== GRÁFICO PRINCIPAL ==========
     fig = px.line(
         temporal,
         x='periodo',
@@ -529,12 +629,10 @@ def analise_temporal(df):
     fig.update_layout(**PLOTLY_TEMA['layout'])
     st.plotly_chart(fig, use_container_width=True)
     
-    # ========== ANÁLISE MENSAL DETALHADA ==========
     if periodo == 'Mês':
         st.markdown("---")
         st.subheader("📅 Análise Mensal Detalhada")
         
-        # Gráfico de barras
         fig_mensal = px.bar(
             temporal,
             x='periodo',
@@ -546,10 +644,8 @@ def analise_temporal(df):
         fig_mensal.update_layout(**PLOTLY_TEMA['layout'])
         st.plotly_chart(fig_mensal, use_container_width=True)
         
-        # Tabela
         st.dataframe(temporal, use_container_width=True)
         
-        # Estatísticas mensais
         st.markdown("### 📊 Estatísticas Mensais")
         col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         
@@ -564,7 +660,6 @@ def analise_temporal(df):
             pior_mes = temporal.loc[temporal[metrica].idxmin(), 'periodo']
             st.metric("Pior Mês", pior_mes)
         
-        # Crescimento mês a mês
         st.markdown("### 📈 Crescimento Mês a Mês")
         temporal['crescimento'] = temporal[metrica].pct_change() * 100
         temporal['crescimento_formatado'] = temporal['crescimento'].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "-")
@@ -576,7 +671,6 @@ def analise_temporal(df):
         })
         st.dataframe(crescimento_df, use_container_width=True)
     
-    # ========== ESTATÍSTICAS GERAIS ==========
     st.markdown("---")
     st.markdown("### 📊 Estatísticas Gerais")
     
@@ -591,7 +685,6 @@ def analise_temporal(df):
     with col_est4:
         st.metric("Pior Período", temporal.loc[temporal[metrica].idxmin(), 'periodo'])
     
-    # Download
     csv_temporal = temporal.to_csv(index=False).encode('utf-8')
     st.download_button(
         label="📥 Download Dados Temporais (CSV)",
@@ -652,7 +745,7 @@ def analise_comparativa_campanhas(df):
     for idx, (_, row) in enumerate(ranking.iterrows()):
         st.markdown(f"""
         <div style='background-color: {cores_ranking[idx]}20; padding: 10px; border-radius: 5px; margin: 5px 0; border-left: 5px solid {cores_ranking[idx]};'>
-            <span style='font-size: 18px; font-weight: bold; color: {CORES['texto_escuro']};'>{idx+1}º {row[campaign_col]}</span>
+            <span style='font-size: 18px; font-weight: bold; color: inherit;'>{idx+1}º {row[campaign_col]}</span>
             <span style='float: right; font-size: 18px; font-weight: bold; color: {cores_ranking[idx]};'>{row['Total']:,.2f}</span>
         </div>
         """, unsafe_allow_html=True)
@@ -663,7 +756,7 @@ def tabela_dinamica_interativa(df):
     
     st.markdown(f"""
     <div style='background-color: {CORES['turquesa']}10; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid {CORES['turquesa']};'>
-        <p style='margin: 0; color: {CORES['verde_escuro']};'><strong>💡 Como usar:</strong> Selecione as colunas para linhas, colunas e valores.</p>
+        <p style='margin: 0; color: inherit;'><strong>💡 Como usar:</strong> Selecione as colunas para linhas, colunas e valores.</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -720,9 +813,9 @@ def exportar_relatorios(df):
     
     with col1:
         st.markdown(f"""
-        <div style='background-color: white; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']};'>
+        <div style='background-color: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);'>
             <span style='font-size: 40px;'>📄</span>
-            <h4 style='color: {CORES['verde_escuro']};'>PDF</h4>
+            <h4 style='color: {CORES['verde_escuro']}'>PDF</h4>
             <p style='color: gray;'>Relatório executivo</p>
         </div>
         """, unsafe_allow_html=True)
@@ -752,9 +845,9 @@ def exportar_relatorios(df):
     
     with col2:
         st.markdown(f"""
-        <div style='background-color: white; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']};'>
+        <div style='background-color: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);'>
             <span style='font-size: 40px;'>📊</span>
-            <h4 style='color: {CORES['verde_escuro']};'>Excel</h4>
+            <h4 style='color: {CORES['verde_escuro']}'>Excel</h4>
             <p style='color: gray;'>Planilha completa</p>
         </div>
         """, unsafe_allow_html=True)
@@ -772,9 +865,9 @@ def exportar_relatorios(df):
     
     with col3:
         st.markdown(f"""
-        <div style='background-color: white; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']};'>
+        <div style='background-color: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; text-align: center; border: 1px solid rgba(255,255,255,0.1);'>
             <span style='font-size: 40px;'>📈</span>
-            <h4 style='color: {CORES['verde_escuro']};'>CSV</h4>
+            <h4 style='color: {CORES['verde_escuro']}'>CSV</h4>
             <p style='color: gray;'>Dados brutos</p>
         </div>
         """, unsafe_allow_html=True)
@@ -868,7 +961,6 @@ if st.session_state.df is not None:
         dashboard_metricas(df)
     
     with tab2:
-        # Sub-abas de análises avançadas
         sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs([
             "📊 Comparativo Campanhas",
             "📈 Análise Temporal",
@@ -891,63 +983,56 @@ if st.session_state.df is not None:
     with tab3:
         st.subheader("ℹ️ Sobre o Dashboard")
         
-        # Card principal
         st.markdown(f"""
         <div style='background: linear-gradient(135deg, {CORES['turquesa']}20, {CORES['roxo']}20); padding: 25px; border-radius: 15px; margin-bottom: 20px;'>
             <h2 style='color: {CORES['verde_escuro']}; margin-top: 0;'>Dashboard Cocred</h2>
-            <p style='font-size: 16px; color: {CORES['texto_escuro']};'>Visualização e análise dos dados de campanhas da Cocred, integrado com SharePoint via Microsoft Graph API.</p>
+            <p style='font-size: 16px; color: inherit;'>Visualização e análise dos dados de campanhas da Cocred, integrado com SharePoint via Microsoft Graph API.</p>
         </div>
         """, unsafe_allow_html=True)
         
-        # Funcionalidades em cards
         st.markdown("### 📌 Funcionalidades")
         
         col_func1, col_func2 = st.columns(2)
         
         with col_func1:
             st.markdown(f"""
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['turquesa']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['turquesa']}; margin: 0;'>📊 Dashboard de Métricas</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Filtros interativos, cards com KPIs e explicações detalhadas de CPM e CPL.</p>
+                <p style='margin: 5px 0 0 0;'>Filtros interativos, cards com KPIs e explicações detalhadas de CPM e CPL.</p>
             </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['roxo']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['roxo']}; margin: 0;'>📈 Comparativo entre Campanhas</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Ranking de performance, gráficos comparativos e top N campanhas.</p>
+                <p style='margin: 5px 0 0 0;'>Ranking de performance, gráficos comparativos e top N campanhas.</p>
             </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['verde_escuro']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['verde_escuro']}; margin: 0;'>📅 Análise Temporal</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Evolução por mês, trimestre, semestre e ano com estatísticas detalhadas.</p>
+                <p style='margin: 5px 0 0 0;'>Evolução por mês, trimestre, semestre e ano com estatísticas detalhadas.</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col_func2:
             st.markdown(f"""
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['verde_claro']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['verde_escuro']}; margin: 0;'>🔄 Tabela Dinâmica</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Configure suas próprias visões com linhas, colunas e funções de agregação.</p>
+            <div class='info-card'>
+                <h4 style='color: {CORES['verde_claro']}; margin: 0;'>🔄 Tabela Dinâmica</h4>
+                <p style='margin: 5px 0 0 0;'>Configure suas próprias visões com linhas, colunas e funções de agregação.</p>
             </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['cinza_escuro']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['cinza_escuro']}; margin: 0;'>📤 Exportação</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Relatórios em PDF, Excel e CSV com preview dos dados.</p>
+                <p style='margin: 5px 0 0 0;'>Relatórios em PDF, Excel e CSV com preview dos dados.</p>
             </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['turquesa']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['turquesa']}; margin: 0;'>🔗 Excel Online</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Edição direta no navegador com todas as funcionalidades do Excel.</p>
+                <p style='margin: 5px 0 0 0;'>Edição direta no navegador com todas as funcionalidades do Excel.</p>
             </div>
             """, unsafe_allow_html=True)
         
-        # Informações técnicas
         st.markdown("### ⚙️ Informações Técnicas")
         
         col_tech1, col_tech2 = st.columns(2)
         
         with col_tech1:
             st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['verde_escuro']}; margin-top: 0;'>Tecnologias Utilizadas</h4>
                 <ul>
                     <li>🐍 Python 3.12</li>
@@ -961,18 +1046,17 @@ if st.session_state.df is not None:
         
         with col_tech2:
             st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px;'>
+            <div class='info-card'>
                 <h4 style='color: {CORES['roxo']}; margin-top: 0;'>Cores Institucionais</h4>
                 <div style='display: flex; gap: 15px; flex-wrap: wrap;'>
-                    <div><span style='background-color: {CORES['turquesa']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Turquesa (#00AE9D)</div>
-                    <div><span style='background-color: {CORES['verde_claro']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Verde Claro (#C9D200)</div>
-                    <div><span style='background-color: {CORES['verde_escuro']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Verde Escuro (#003641)</div>
-                    <div><span style='background-color: {CORES['roxo']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Roxo (#49479D)</div>
+                    <div><span style='background-color: {CORES['turquesa']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Turquesa</div>
+                    <div><span style='background-color: {CORES['verde_claro']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Verde Claro</div>
+                    <div><span style='background-color: {CORES['verde_escuro']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Verde Escuro</div>
+                    <div><span style='background-color: {CORES['roxo']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Roxo</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
         
-        # Informações do arquivo atual (se disponível)
         if st.session_state.file_metadata:
             st.markdown("### 📁 Arquivo Atual")
             
@@ -985,7 +1069,7 @@ if st.session_state.df is not None:
             
             with col_file1:
                 st.markdown(f"""
-                <div style='background-color: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center;'>
+                <div class='info-card' style='text-align: center;'>
                     <p style='margin: 0; font-size: 14px; color: #666;'>Arquivo</p>
                     <p style='margin: 5px 0 0 0; font-weight: bold;'>{meta.get('name', 'N/A')}</p>
                 </div>
@@ -993,7 +1077,7 @@ if st.session_state.df is not None:
             
             with col_file2:
                 st.markdown(f"""
-                <div style='background-color: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center;'>
+                <div class='info-card' style='text-align: center;'>
                     <p style='margin: 0; font-size: 14px; color: #666;'>Última modificação</p>
                     <p style='margin: 5px 0 0 0; font-weight: bold;'>{modified}</p>
                 </div>
@@ -1001,17 +1085,16 @@ if st.session_state.df is not None:
             
             with col_file3:
                 st.markdown(f"""
-                <div style='background-color: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center;'>
+                <div class='info-card' style='text-align: center;'>
                     <p style='margin: 0; font-size: 14px; color: #666;'>Tamanho</p>
                     <p style='margin: 5px 0 0 0; font-weight: bold;'>{int(meta.get('size', 0))/1024:.1f} KB</p>
                 </div>
                 """, unsafe_allow_html=True)
         
-        # Versão e créditos
         st.markdown("---")
         st.markdown(f"""
-        <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;'>
-            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.3</p>
+        <div style='text-align: center; padding: 20px; background-color: rgba(128,128,128,0.05); border-radius: 10px;'>
+            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.4 - Dark Theme</p>
             <p style='margin: 5px 0 0 0; color: #666; font-size: 14px;'>Desenvolvido para a Cocred • {datetime.now().strftime('%Y')}</p>
             <p style='margin: 5px 0 0 0; color: #999; font-size: 12px;'>Integração com SharePoint via Microsoft Graph API</p>
         </div>
@@ -1023,9 +1106,9 @@ else:
     
     with col1:
         st.markdown(f"""
-        <div style='background-color: white; padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
+        <div style='background-color: rgba(255,255,255,0.05); padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
             <span style='font-size: 60px;'>👋</span>
-            <h3 style='color: {CORES['verde_escuro']};'>Bem-vindo ao Dashboard Cocred</h3>
+            <h3 style='color: {CORES['verde_escuro']}'>Bem-vindo ao Dashboard Cocred</h3>
             <p style='color: gray;'>Clique em 'Carregar Planilha' no menu lateral para começar.</p>
             <div style='margin-top: 20px;'>
                 <span style='background-color: {CORES['turquesa']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Turquesa</span>
@@ -1040,8 +1123,8 @@ else:
         st.markdown(f"""
         <div style='background: linear-gradient(135deg, {CORES['turquesa']}20, {CORES['roxo']}20); padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
             <span style='font-size: 60px;'>📊</span>
-            <h3 style='color: {CORES['roxo']};'>Editar Planilha</h3>
-            <p style='color: {CORES['texto_escuro']};'>Use o Excel Online para fazer alterações diretamente no navegador.</p>
+            <h3 style='color: {CORES['roxo']}'>Editar Planilha</h3>
+            <p style='color: inherit;'>Use o Excel Online para fazer alterações diretamente no navegador.</p>
             <div style='margin-top: 20px;'>
                 <a href='{EXCEL_ONLINE_URL}' target='_blank' style='background-color: {CORES['turquesa']}; color: white; padding: 10px 30px; border-radius: 5px; text-decoration: none; font-weight: bold;'>Abrir Excel Online</a>
             </div>
@@ -1053,8 +1136,8 @@ st.markdown("---")
 st.markdown(f"""
 <div class='footer'>
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
-    <span style='color: {CORES['turquesa']};'>Cocred</span> • 
-    <span style='color: {CORES['roxo']};'>Relatório de Campanhas</span> • 
-    <span>v6.3</span>
+    <span style='color: {CORES['turquesa']}'>Cocred</span> • 
+    <span style='color: {CORES['roxo']}'>Relatório de Campanhas</span> • 
+    <span>v6.4 - Dark Theme</span>
 </div>
 """, unsafe_allow_html=True)
