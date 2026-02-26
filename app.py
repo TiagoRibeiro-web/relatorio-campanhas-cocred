@@ -54,7 +54,7 @@ EXCEL_ONLINE_URL = "https://agenciaideatore-my.sharepoint.com/:x:/r/personal/cri
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(
-    page_title="Dashboard Cocred - Id",
+    page_title="Dashboard Cocred - Ideatore",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
