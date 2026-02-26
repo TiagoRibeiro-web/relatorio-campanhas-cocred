@@ -10,6 +10,16 @@ from fpdf import FPDF
 import tempfile
 import os
 
+# ========== FUNÇÃO PARA FORMATAR PERCENTUAIS ==========
+def formatar_percentual(valor):
+    """Formata qualquer valor como percentual arredondado"""
+    if pd.isna(valor) or valor == 0:
+        return "0%"
+    # Converte para percentual (0.15 → 15)
+    percentual = valor * 100
+    # Arredonda para inteiro
+    return f"{round(percentual)}%"
+
 # ========== CORES OFICIAIS DA COCRED ==========
 CORES = {
     'turquesa': '#00AE9D',
@@ -54,7 +64,7 @@ EXCEL_ONLINE_URL = "https://agenciaideatore-my.sharepoint.com/:x:/r/personal/cri
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(
-    page_title="Dashboard Cocred - Ideatore",
+    page_title="Dashboard Cocred - Id",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -181,7 +191,6 @@ def exportar_excel_completo(df):
     
     return output
 
-# ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES) ==========
 # ========== DASHBOARD DE MÉTRICAS ==========
 def dashboard_metricas(df):
     """Dashboard com filtros, cards de métricas, descrições e tabela geral"""
@@ -192,9 +201,9 @@ def dashboard_metricas(df):
     col_f1, col_f2, col_f3, col_f4 = st.columns(4)
     
     with col_f1:
-        # CORREÇÃO: Busca por "Ano da Campanha" primeiro
+        # Busca por "Ano da Campanha"
         possiveis_ano = [
-            'Ano da Campanha',  # Nome exato da planilha
+            'Ano da Campanha',
             'Ano', 'ano', 'ANO',
             'Ano da campanha', 'ano da campanha'
         ]
@@ -240,10 +249,9 @@ def dashboard_metricas(df):
         else:
             veic_sel = st.selectbox("Veículo", ['Todos'], key="filtro_veiculo")
     
-    # Aplicar filtros - CORREÇÃO: Usar a coluna correta de ano
+    # Aplicar filtros
     df_filtrado = df.copy()
     
-    # Aplicar filtro de ano usando a coluna encontrada
     if col_ano and ano_sel != 'Todos':
         df_filtrado = df_filtrado[df_filtrado[col_ano].astype(str) == ano_sel]
     
@@ -368,7 +376,7 @@ def dashboard_metricas(df):
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
                 Número total de leads gerados.<br>
                 <strong>Total: {leads:,.0f} leads</strong><br>
-                Taxa de conversão: {(leads/impacto*100) if impacto>0 else 0:.2f}%
+                Taxa de conversão: {formatar_percentual(leads/impacto) if impacto>0 else "0%"}
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -377,7 +385,19 @@ def dashboard_metricas(df):
     
     # ========== TABELA GERAL ==========
     st.markdown("### 📋 TABELA GERAL")
-    st.dataframe(df_filtrado, use_container_width=True, height=400)
+    
+    # Formata colunas de porcentagem na tabela
+    df_exibicao = df_filtrado.copy()
+    
+    # Detecta colunas que parecem ser taxas/percentuais
+    for col in df_exibicao.select_dtypes(include=['float64', 'int64']).columns:
+        # Se a coluna tem valores entre 0 e 1 (provável percentual)
+        if df_exibicao[col].min() >= 0 and df_exibicao[col].max() <= 1:
+            # Verifica se o nome da coluna sugere taxa
+            if any(palavra in col.lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão', 'abertura', 'clique']):
+                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_percentual(x))
+    
+    st.dataframe(df_exibicao, use_container_width=True, height=400)
     
     csv = df_filtrado.to_csv(index=False).encode('utf-8')
     st.download_button(
@@ -386,6 +406,7 @@ def dashboard_metricas(df):
         file_name=f"dados_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
         mime="text/csv"
     )
+
 # ========== ANÁLISE TEMPORAL ==========
 def analise_temporal(df):
     """Análise ao longo do tempo - VERSÃO CORRIGIDA PARA 'mês da análise'"""
@@ -634,7 +655,15 @@ def analise_comparativa_campanhas(df):
     comparativo = comparativo.sort_values('Total', ascending=False).head(top_n)
     
     st.markdown(f"### Top {top_n} Campanhas por {metrica_principal}")
-    st.dataframe(comparativo, use_container_width=True)
+    
+    # Formata colunas que podem ser percentuais no comparativo
+    df_exibicao = comparativo.copy()
+    for col in df_exibicao.select_dtypes(include=['float64', 'int64']).columns:
+        if df_exibicao[col].min() >= 0 and df_exibicao[col].max() <= 1:
+            if any(palavra in col.lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão']):
+                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_percentual(x))
+    
+    st.dataframe(df_exibicao, use_container_width=True)
     
     fig = px.bar(
         comparativo.reset_index(),
@@ -698,7 +727,16 @@ def tabela_dinamica_interativa(df):
             pivot = pivot.sort_values(valores, ascending=False)
         
         st.markdown("### Resultado")
-        st.dataframe(pivot, use_container_width=True, height=400)
+        
+        # Formata percentuais na tabela dinâmica
+        df_pivot_exibicao = pivot.copy()
+        if isinstance(df_pivot_exibicao, pd.DataFrame):
+            for col in df_pivot_exibicao.select_dtypes(include=['float64', 'int64']).columns:
+                if df_pivot_exibicao[col].min() >= 0 and df_pivot_exibicao[col].max() <= 1:
+                    if any(palavra in str(col).lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão']):
+                        df_pivot_exibicao[col] = df_pivot_exibicao[col].apply(lambda x: formatar_percentual(x))
+        
+        st.dataframe(df_pivot_exibicao, use_container_width=True, height=400)
         
         csv_pivot = pivot.to_csv().encode('utf-8')
         st.download_button(
@@ -1010,7 +1048,7 @@ if st.session_state.df is not None:
         st.markdown("---")
         st.markdown(f"""
         <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;'>
-            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.3</p>
+            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.4</p>
             <p style='margin: 5px 0 0 0; color: #666; font-size: 14px;'>Desenvolvido para a Cocred • {datetime.now().strftime('%Y')}</p>
             <p style='margin: 5px 0 0 0; color: #999; font-size: 12px;'>Integração com SharePoint via Microsoft Graph API</p>
         </div>
@@ -1054,6 +1092,6 @@ st.markdown(f"""
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['roxo']};'>Relatório de Campanhas</span> • 
-    <span>v6.3</span>
+    <span>v6.4 - Formatação de Percentuais</span>
 </div>
 """, unsafe_allow_html=True)
