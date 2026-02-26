@@ -282,11 +282,11 @@ def dashboard_metricas(df):
     ]
     
     col_impacto = None
-    # for nome in possiveis_impacto:
-    #     if nome in df_filtrado.columns:
-    #         col_impacto = nome
-    #         st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")
-    #         break
+    for nome in possiveis_impacto:
+        if nome in df_filtrado.columns:
+            col_impacto = nome
+            #st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")
+            break
     
     col_invest = next((col for col in ['Investimento', 'investimento', 'INVESTIMENTO', 'gasto', 'custo'] if col in df_filtrado.columns), None)
     col_leads = next((col for col in ['Leads', 'leads', 'LEADS', 'conversoes', 'conversões'] if col in df_filtrado.columns), None)
