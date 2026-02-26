@@ -952,7 +952,6 @@ if st.session_state.df is not None:
                 <ul>
                     <li>🐍 Python 3.12 e vários frameworks e bibliotecas</li>
                     <li>📊 Cloud Azure e suas dependências</li>
-                    
                 </ul>
             </div>
             """, unsafe_allow_html=True)
