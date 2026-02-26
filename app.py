@@ -192,11 +192,25 @@ def dashboard_metricas(df):
     col_f1, col_f2, col_f3, col_f4 = st.columns(4)
     
     with col_f1:
-        if 'Ano' in df.columns:
-            anos = ['Todos'] + sorted(df['Ano'].astype(str).unique().tolist())
+        # CORREÇÃO: Busca por "Ano da Campanha" primeiro
+        possiveis_ano = [
+            'Ano da Campanha',  # Nome exato da planilha
+            'Ano', 'ano', 'ANO',
+            'Ano da campanha', 'ano da campanha'
+        ]
+        
+        col_ano = None
+        for nome in possiveis_ano:
+            if nome in df.columns:
+                col_ano = nome
+                break
+        
+        if col_ano:
+            anos = ['Todos'] + sorted(df[col_ano].astype(str).unique().tolist())
             ano_sel = st.selectbox("Ano", anos, key="filtro_ano")
         else:
             ano_sel = st.selectbox("Ano", ['Todos'], key="filtro_ano")
+            st.caption("⚠️ Coluna 'Ano da Campanha' não encontrada")
     
     with col_f2:
         camp_cols = [col for col in df.columns if any(x in col.lower() for x in ['campanha', 'campaign'])]
@@ -226,11 +240,12 @@ def dashboard_metricas(df):
         else:
             veic_sel = st.selectbox("Veículo", ['Todos'], key="filtro_veiculo")
     
-    # Aplicar filtros
+    # Aplicar filtros - CORREÇÃO: Usar a coluna correta de ano
     df_filtrado = df.copy()
     
-    if 'Ano' in df.columns and ano_sel != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado['Ano'].astype(str) == ano_sel]
+    # Aplicar filtro de ano usando a coluna encontrada
+    if col_ano and ano_sel != 'Todos':
+        df_filtrado = df_filtrado[df_filtrado[col_ano].astype(str) == ano_sel]
     
     if camp_cols and camp_sel != 'Todas':
         df_filtrado = df_filtrado[df_filtrado[camp_cols[0]] == camp_sel]
@@ -246,9 +261,9 @@ def dashboard_metricas(df):
     # ========== BIG NUMBERS ==========
     st.markdown("### 📊 BIG NUMBERS")
     
-    # CORREÇÃO: Busca por IMPACTO com o nome exato da planilha
+    # Busca por IMPACTO
     possiveis_impacto = [
-        'Impacto (impressões e entrega de email)',  # Nome exato da planilha
+        'Impacto (impressões e entrega de email)',
         'Impacto', 'impacto', 'IMPACTO',
         'Impressões', 'impressões', 'IMPRESSÕES',
         'Impressoes', 'impressoes', 'IMPRESSOES',
@@ -262,7 +277,7 @@ def dashboard_metricas(df):
     for nome in possiveis_impacto:
         if nome in df_filtrado.columns:
             col_impacto = nome
-            st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")  # Feedback visual
+            st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")
             break
     
     col_invest = next((col for col in ['Investimento', 'investimento', 'INVESTIMENTO', 'gasto', 'custo'] if col in df_filtrado.columns), None)
@@ -318,11 +333,10 @@ def dashboard_metricas(df):
         </div>
         """, unsafe_allow_html=True)
     
-    # ========== DESCRIÇÕES DAS MÉTRICAS (APENAS IMPACTO, INVESTIMENTO E LEADS) ==========
+    # ========== DESCRIÇÕES DAS MÉTRICAS ==========
     st.markdown("---")
     st.markdown("### 📘 Entendendo as Métricas")
     
-    # Agora com apenas 3 colunas (removidos CPM e CPL)
     col_desc1, col_desc2, col_desc3 = st.columns(3)
     
     with col_desc1:
@@ -372,7 +386,6 @@ def dashboard_metricas(df):
         file_name=f"dados_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
         mime="text/csv"
     )
-
 # ========== ANÁLISE TEMPORAL ==========
 def analise_temporal(df):
     """Análise ao longo do tempo - VERSÃO CORRIGIDA PARA 'mês da análise'"""
