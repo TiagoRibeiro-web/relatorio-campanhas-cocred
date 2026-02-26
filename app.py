@@ -182,9 +182,9 @@ def exportar_excel_completo(df):
     return output
 
 # ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES) ==========
-# ========== DASHBOARD DE MÉTRICAS (CORRIGIDO E SIMPLIFICADO) ==========
+# ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES - SEM CPM/CPL) ==========
 def dashboard_metricas(df):
-    """Dashboard com filtros, cards de métricas e tabela geral"""
+    """Dashboard com filtros, cards de métricas, descrições (sem CPM/CPL) e tabela geral"""
     
     st.markdown("### 🔍 FILTROS")
     
@@ -246,22 +246,13 @@ def dashboard_metricas(df):
     # ========== BIG NUMBERS ==========
     st.markdown("### 📊 BIG NUMBERS")
     
-    # Diagnóstico: mostrar as colunas disponíveis (remova depois que funcionar)
-    with st.expander("🔍 Diagnóstico - Colunas disponíveis"):
-        st.write("**Todas as colunas:**", df_filtrado.columns.tolist())
-        
-        # Mostra as primeiras linhas para ver os valores
-        st.write("**Primeiras linhas:**")
-        st.dataframe(df_filtrado.head(3))
-    
-    # ===== CORREÇÃO: Busca por IMPACTO com mais variações =====
-    # Lista ampliada de possíveis nomes para a coluna de impacto
+    # CORREÇÃO: Busca por IMPACTO com mais variações
     possiveis_impacto = [
         'Impacto', 'impacto', 'IMPACTO',
-        'impressoes', 'Impressoes', 'IMPRESSOES',
-        'impressões', 'Impressões', 'IMPRESSÕES',
-        'visualizacoes', 'Visualizacoes', 'VISUALIZACOES',
-        'visualizações', 'Visualizações', 'VISUALIZAÇÕES',
+        'Impressões', 'impressões', 'IMPRESSÕES',
+        'Impressoes', 'impressoes', 'IMPRESSOES',
+        'Visualizações', 'visualizações', 'VISUALIZAÇÕES',
+        'Visualizacoes', 'visualizacoes', 'VISUALIZACOES',
         'views', 'Views', 'VIEWS',
         'alcance', 'Alcance', 'ALCANCE'
     ]
@@ -270,14 +261,15 @@ def dashboard_metricas(df):
     for nome in possiveis_impacto:
         if nome in df_filtrado.columns:
             col_impacto = nome
-            st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")  # Feedback visual
             break
     
-    # Colunas para investimento e leads (mantém como estava)
-    col_invest = next((col for col in ['Investimento', 'investimento', 'gasto', 'custo', 'INVESTIMENTO'] if col in df_filtrado.columns), None)
-    col_leads = next((col for col in ['Leads', 'leads', 'conversoes', 'conversões', 'LEADS'] if col in df_filtrado.columns), None)
+    # Diagnóstico (remova depois que funcionar)
+    if col_impacto is None:
+        st.warning(f"⚠️ Coluna de IMPACTO não encontrada. Colunas disponíveis: {df_filtrado.columns.tolist()}")
     
-    # Calcular métricas
+    col_invest = next((col for col in ['Investimento', 'investimento', 'INVESTIMENTO', 'gasto', 'custo'] if col in df_filtrado.columns), None)
+    col_leads = next((col for col in ['Leads', 'leads', 'LEADS', 'conversoes', 'conversões'] if col in df_filtrado.columns), None)
+    
     impacto = df_filtrado[col_impacto].sum() if col_impacto else 0
     investimento = df_filtrado[col_invest].sum() if col_invest else 0
     leads = df_filtrado[col_leads].sum() if col_leads else 0
@@ -285,7 +277,7 @@ def dashboard_metricas(df):
     cpm = (investimento / impacto * 1000) if impacto > 0 else 0
     cpl = (investimento / leads) if leads > 0 else 0
     
-    # Cards (apenas os Big Numbers, sem as descrições)
+    # Cards
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
@@ -325,6 +317,47 @@ def dashboard_metricas(df):
         <div style='background-color: {CORES['cinza_escuro']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
             <p style='color: white; margin: 0; font-size: 14px;'>CPL</p>
             <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>R$ {cpl:.2f}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # ========== DESCRIÇÕES DAS MÉTRICAS (APENAS IMPACTO, INVESTIMENTO E LEADS) ==========
+    st.markdown("---")
+    st.markdown("### 📘 Entendendo as Métricas")
+    
+    # Agora com apenas 3 colunas (removidos CPM e CPL)
+    col_desc1, col_desc2, col_desc3 = st.columns(3)
+    
+    with col_desc1:
+        st.markdown("""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+            <h5 style='color: #00AE9D; margin: 0;'>IMPACTO</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                Número total de impressões ou visualizações da campanha.<br>
+                <strong>Quanto maior, melhor o alcance.</strong>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_desc2:
+        st.markdown("""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+            <h5 style='color: #49479D; margin: 0;'>INVESTIMENTO</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                Valor total gasto na campanha.<br>
+                <strong>Base para cálculo das demais métricas.</strong>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_desc3:
+        st.markdown(f"""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>LEADS</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                Número total de leads gerados.<br>
+                <strong>Total: {leads:,.0f} leads</strong><br>
+                Taxa de conversão: {(leads/impacto*100) if impacto>0 else 0:.2f}%
+            </p>
         </div>
         """, unsafe_allow_html=True)
     
