@@ -182,9 +182,9 @@ def exportar_excel_completo(df):
     return output
 
 # ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES) ==========
-# ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES - SEM CPM/CPL) ==========
+# ========== DASHBOARD DE MÉTRICAS ==========
 def dashboard_metricas(df):
-    """Dashboard com filtros, cards de métricas, descrições (sem CPM/CPL) e tabela geral"""
+    """Dashboard com filtros, cards de métricas, descrições e tabela geral"""
     
     st.markdown("### 🔍 FILTROS")
     
@@ -246,8 +246,9 @@ def dashboard_metricas(df):
     # ========== BIG NUMBERS ==========
     st.markdown("### 📊 BIG NUMBERS")
     
-    # CORREÇÃO: Busca por IMPACTO com mais variações
+    # CORREÇÃO: Busca por IMPACTO com o nome exato da planilha
     possiveis_impacto = [
+        'Impacto (impressões e entrega de email)',  # Nome exato da planilha
         'Impacto', 'impacto', 'IMPACTO',
         'Impressões', 'impressões', 'IMPRESSÕES',
         'Impressoes', 'impressoes', 'IMPRESSOES',
@@ -261,11 +262,8 @@ def dashboard_metricas(df):
     for nome in possiveis_impacto:
         if nome in df_filtrado.columns:
             col_impacto = nome
+            st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")  # Feedback visual
             break
-    
-    # Diagnóstico (remova depois que funcionar)
-    if col_impacto is None:
-        st.warning(f"⚠️ Coluna de IMPACTO não encontrada. Colunas disponíveis: {df_filtrado.columns.tolist()}")
     
     col_invest = next((col for col in ['Investimento', 'investimento', 'INVESTIMENTO', 'gasto', 'custo'] if col in df_filtrado.columns), None)
     col_leads = next((col for col in ['Leads', 'leads', 'LEADS', 'conversoes', 'conversões'] if col in df_filtrado.columns), None)
