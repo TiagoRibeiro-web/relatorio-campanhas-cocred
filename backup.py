@@ -10,6 +10,16 @@ from fpdf import FPDF
 import tempfile
 import os
 
+# ========== FUNÇÃO PARA FORMATAR PERCENTUAIS ==========
+def formatar_percentual(valor):
+    """Formata qualquer valor como percentual arredondado"""
+    if pd.isna(valor) or valor == 0:
+        return "0%"
+    # Converte para percentual (0.15 → 15)
+    percentual = valor * 100
+    # Arredonda para inteiro
+    return f"{round(percentual)}%"
+
 # ========== CORES OFICIAIS DA COCRED ==========
 CORES = {
     'turquesa': '#00AE9D',
@@ -181,10 +191,9 @@ def exportar_excel_completo(df):
     
     return output
 
-# ========== DASHBOARD DE MÉTRICAS (COM DESCRIÇÕES) ==========
-# ========== DASHBOARD DE MÉTRICAS (CORRIGIDO E SIMPLIFICADO) ==========
+# ========== DASHBOARD DE MÉTRICAS ==========
 def dashboard_metricas(df):
-    """Dashboard com filtros, cards de métricas e tabela geral"""
+    """Dashboard com filtros, cards de métricas, descrições e tabela geral"""
     
     st.markdown("### 🔍 FILTROS")
     
@@ -192,11 +201,25 @@ def dashboard_metricas(df):
     col_f1, col_f2, col_f3, col_f4 = st.columns(4)
     
     with col_f1:
-        if 'Ano' in df.columns:
-            anos = ['Todos'] + sorted(df['Ano'].astype(str).unique().tolist())
+        # Busca por "Ano da Campanha"
+        possiveis_ano = [
+            'Ano da Campanha',
+            'Ano', 'ano', 'ANO',
+            'Ano da campanha', 'ano da campanha'
+        ]
+        
+        col_ano = None
+        for nome in possiveis_ano:
+            if nome in df.columns:
+                col_ano = nome
+                break
+        
+        if col_ano:
+            anos = ['Todos'] + sorted(df[col_ano].astype(str).unique().tolist())
             ano_sel = st.selectbox("Ano", anos, key="filtro_ano")
         else:
             ano_sel = st.selectbox("Ano", ['Todos'], key="filtro_ano")
+            st.caption("⚠️ Coluna 'Ano da Campanha' não encontrada")
     
     with col_f2:
         camp_cols = [col for col in df.columns if any(x in col.lower() for x in ['campanha', 'campaign'])]
@@ -229,8 +252,8 @@ def dashboard_metricas(df):
     # Aplicar filtros
     df_filtrado = df.copy()
     
-    if 'Ano' in df.columns and ano_sel != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado['Ano'].astype(str) == ano_sel]
+    if col_ano and ano_sel != 'Todos':
+        df_filtrado = df_filtrado[df_filtrado[col_ano].astype(str) == ano_sel]
     
     if camp_cols and camp_sel != 'Todas':
         df_filtrado = df_filtrado[df_filtrado[camp_cols[0]] == camp_sel]
@@ -246,22 +269,14 @@ def dashboard_metricas(df):
     # ========== BIG NUMBERS ==========
     st.markdown("### 📊 BIG NUMBERS")
     
-    # Diagnóstico: mostrar as colunas disponíveis (remova depois que funcionar)
-    with st.expander("🔍 Diagnóstico - Colunas disponíveis"):
-        st.write("**Todas as colunas:**", df_filtrado.columns.tolist())
-        
-        # Mostra as primeiras linhas para ver os valores
-        st.write("**Primeiras linhas:**")
-        st.dataframe(df_filtrado.head(3))
-    
-    # ===== CORREÇÃO: Busca por IMPACTO com mais variações =====
-    # Lista ampliada de possíveis nomes para a coluna de impacto
+    # Busca por IMPACTO
     possiveis_impacto = [
+        'Impacto (impressões e entrega de email)',
         'Impacto', 'impacto', 'IMPACTO',
-        'impressoes', 'Impressoes', 'IMPRESSOES',
-        'impressões', 'Impressões', 'IMPRESSÕES',
-        'visualizacoes', 'Visualizacoes', 'VISUALIZACOES',
-        'visualizações', 'Visualizações', 'VISUALIZAÇÕES',
+        'Impressões', 'impressões', 'IMPRESSÕES',
+        'Impressoes', 'impressoes', 'IMPRESSOES',
+        'Visualizações', 'visualizações', 'VISUALIZAÇÕES',
+        'Visualizacoes', 'visualizacoes', 'VISUALIZACOES',
         'views', 'Views', 'VIEWS',
         'alcance', 'Alcance', 'ALCANCE'
     ]
@@ -270,14 +285,12 @@ def dashboard_metricas(df):
     for nome in possiveis_impacto:
         if nome in df_filtrado.columns:
             col_impacto = nome
-            st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")  # Feedback visual
+            #st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")
             break
     
-    # Colunas para investimento e leads (mantém como estava)
-    col_invest = next((col for col in ['Investimento', 'investimento', 'gasto', 'custo', 'INVESTIMENTO'] if col in df_filtrado.columns), None)
-    col_leads = next((col for col in ['Leads', 'leads', 'conversoes', 'conversões', 'LEADS'] if col in df_filtrado.columns), None)
+    col_invest = next((col for col in ['Investimento', 'investimento', 'INVESTIMENTO', 'gasto', 'custo'] if col in df_filtrado.columns), None)
+    col_leads = next((col for col in ['Leads', 'leads', 'LEADS', 'conversoes', 'conversões'] if col in df_filtrado.columns), None)
     
-    # Calcular métricas
     impacto = df_filtrado[col_impacto].sum() if col_impacto else 0
     investimento = df_filtrado[col_invest].sum() if col_invest else 0
     leads = df_filtrado[col_leads].sum() if col_leads else 0
@@ -285,7 +298,7 @@ def dashboard_metricas(df):
     cpm = (investimento / impacto * 1000) if impacto > 0 else 0
     cpl = (investimento / leads) if leads > 0 else 0
     
-    # Cards (apenas os Big Numbers, sem as descrições)
+    # Cards
     col1, col2, col3, col4, col5 = st.columns(5)
     
     with col1:
@@ -328,11 +341,62 @@ def dashboard_metricas(df):
         </div>
         """, unsafe_allow_html=True)
     
+    # ========== DESCRIÇÕES DAS MÉTRICAS ==========
+    st.markdown("---")
+    st.markdown("### 📘 Entendendo as Métricas")
+    
+    col_desc1, col_desc2, col_desc3 = st.columns(3)
+    
+    with col_desc1:
+        st.markdown("""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+            <h5 style='color: #00AE9D; margin: 0;'>IMPACTO</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                Número total de impressões ou visualizações da campanha.<br>
+                <strong>Quanto maior, melhor o alcance.</strong>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_desc2:
+        st.markdown("""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+            <h5 style='color: #49479D; margin: 0;'>INVESTIMENTO</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                Valor total gasto na campanha.<br>
+                <strong>Base para cálculo das demais métricas.</strong>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_desc3:
+        st.markdown(f"""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>LEADS</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                Número total de leads gerados.<br>
+                <strong>Total: {leads:,.0f} leads</strong><br>
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
     st.markdown("---")
     
     # ========== TABELA GERAL ==========
     st.markdown("### 📋 TABELA GERAL")
-    st.dataframe(df_filtrado, use_container_width=True, height=400)
+    
+    # Formata colunas de porcentagem na tabela
+    df_exibicao = df_filtrado.copy()
+    
+    # Detecta colunas que parecem ser taxas/percentuais
+    for col in df_exibicao.select_dtypes(include=['float64', 'int64']).columns:
+        # Se a coluna tem valores entre 0 e 1 (provável percentual)
+        if df_exibicao[col].min() >= 0 and df_exibicao[col].max() <= 1:
+            # Verifica se o nome da coluna sugere taxa
+            if any(palavra in col.lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão', 'abertura', 'clique']):
+                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_percentual(x))
+    
+    st.dataframe(df_exibicao, use_container_width=True, height=400)
     
     csv = df_filtrado.to_csv(index=False).encode('utf-8')
     st.download_button(
@@ -590,7 +654,15 @@ def analise_comparativa_campanhas(df):
     comparativo = comparativo.sort_values('Total', ascending=False).head(top_n)
     
     st.markdown(f"### Top {top_n} Campanhas por {metrica_principal}")
-    st.dataframe(comparativo, use_container_width=True)
+    
+    # Formata colunas que podem ser percentuais no comparativo
+    df_exibicao = comparativo.copy()
+    for col in df_exibicao.select_dtypes(include=['float64', 'int64']).columns:
+        if df_exibicao[col].min() >= 0 and df_exibicao[col].max() <= 1:
+            if any(palavra in col.lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão']):
+                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_percentual(x))
+    
+    st.dataframe(df_exibicao, use_container_width=True)
     
     fig = px.bar(
         comparativo.reset_index(),
@@ -654,7 +726,16 @@ def tabela_dinamica_interativa(df):
             pivot = pivot.sort_values(valores, ascending=False)
         
         st.markdown("### Resultado")
-        st.dataframe(pivot, use_container_width=True, height=400)
+        
+        # Formata percentuais na tabela dinâmica
+        df_pivot_exibicao = pivot.copy()
+        if isinstance(df_pivot_exibicao, pd.DataFrame):
+            for col in df_pivot_exibicao.select_dtypes(include=['float64', 'int64']).columns:
+                if df_pivot_exibicao[col].min() >= 0 and df_pivot_exibicao[col].max() <= 1:
+                    if any(palavra in str(col).lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão']):
+                        df_pivot_exibicao[col] = df_pivot_exibicao[col].apply(lambda x: formatar_percentual(x))
+        
+        st.dataframe(df_pivot_exibicao, use_container_width=True, height=400)
         
         csv_pivot = pivot.to_csv().encode('utf-8')
         st.download_button(
@@ -966,7 +1047,7 @@ if st.session_state.df is not None:
         st.markdown("---")
         st.markdown(f"""
         <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;'>
-            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.3</p>
+            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.4</p>
             <p style='margin: 5px 0 0 0; color: #666; font-size: 14px;'>Desenvolvido para a Cocred • {datetime.now().strftime('%Y')}</p>
             <p style='margin: 5px 0 0 0; color: #999; font-size: 12px;'>Integração com SharePoint via Microsoft Graph API</p>
         </div>
@@ -1010,6 +1091,6 @@ st.markdown(f"""
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['roxo']};'>Relatório de Campanhas</span> • 
-    <span>v6.3</span>
+    <span>v6.4 - Formatação de Percentuais</span>
 </div>
 """, unsafe_allow_html=True)

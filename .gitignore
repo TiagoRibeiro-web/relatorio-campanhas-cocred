@@ -1,0 +1,80 @@
+# ========== SEGREDOS DO STREAMLIT ==========
+# NUNCA enviar para o GitHub
+.streamlit/
+secrets.toml
+*.secrets.toml
+
+# ========== ARQUIVOS PYTHON LOCAIS ==========
+# Versões alternativas e backups que NÃO vão para o GitHub
+simple.py
+backup.py
+teste.py
+dev.py
+local.py
+sandbox.py
+temp.py
+tmp.py
+*.bak
+*.backup
+
+# ========== AMBIENTE VIRTUAL ==========
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+pythonenv*
+
+# ========== CACHE DO PYTHON ==========
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+
+# ========== ARQUIVOS DE DADOS ==========
+# Dados baixados/carregados
+*.xlsx
+*.xls
+*.csv
+*.db
+*.sqlite
+*.parquet
+*.feather
+*.pickle
+*.pkl
+
+# ========== ARQUIVOS DE RELATÓRIOS ==========
+# Relatórios gerados
+*.pdf
+*.html
+*.htm
+
+# ========== ARQUIVOS DE LOG ==========
+*.log
+logs/
+
+# ========== ARQUIVOS DO SISTEMA ==========
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# ========== ARQUIVOS DE IDE ==========
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
