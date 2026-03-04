@@ -376,7 +376,7 @@ def dashboard_metricas(df):
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
                 Número total de leads gerados.<br>
                 <strong>Total: {leads:,.0f} leads</strong><br>
-                Taxa de conversão: {formatar_percentual(leads/impacto) if impacto>0 else "0%"}
+                
             </p>
         </div>
         """, unsafe_allow_html=True)
