@@ -376,7 +376,6 @@ def dashboard_metricas(df):
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
                 Número total de leads gerados.<br>
                 <strong>Total: {leads:,.0f} leads</strong><br>
-                
             </p>
         </div>
         """, unsafe_allow_html=True)
