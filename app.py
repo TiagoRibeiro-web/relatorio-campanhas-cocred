@@ -64,7 +64,7 @@ EXCEL_ONLINE_URL = "https://agenciaideatore-my.sharepoint.com/:x:/r/personal/cri
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(
-    page_title="Dashboard Cocred - Id",
+    page_title="Dashboard Cocred - Campanhas",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -78,9 +78,6 @@ st.markdown(f"""
     .stButton button {{ background-color: {CORES['turquesa']}; color: white; border: none; border-radius: 5px; padding: 10px 20px; font-weight: bold; transition: all 0.3s; }}
     .stButton button:hover {{ background-color: {CORES['roxo']}; }}
     .stLinkButton button {{ background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']}); color: white; font-size: 18px; padding: 15px; border-radius: 10px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
-    .stTabs [data-baseweb="tab-list"] {{ gap: 8px; }}
-    .stTabs [data-baseweb="tab"] {{ background-color: {CORES['cinza_claro']}; border-radius: 5px 5px 0 0; padding: 10px 20px; color: {CORES['texto_escuro']}; }}
-    .stTabs [aria-selected="true"] {{ background-color: {CORES['turquesa']}; color: white; }}
     .footer {{ color: {CORES['cinza_escuro']}; font-size: 12px; text-align: center; padding: 20px; border-top: 1px solid {CORES['cinza_claro']}; }}
     .tooltip {{ position: relative; display: inline-block; cursor: help; }}
     .tooltip .tooltiptext {{ visibility: hidden; width: 200px; background-color: {CORES['verde_escuro']}; color: white; text-align: center; border-radius: 6px; padding: 5px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; }}
@@ -91,8 +88,8 @@ st.markdown(f"""
 # ========== TÍTULO PRINCIPAL ==========
 st.markdown(f"""
 <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {CORES['turquesa']}20, {CORES['roxo']}20); border-radius: 15px; margin-bottom: 20px;'>
-    <h1 style='color: {CORES['verde_escuro']}; margin-bottom: 0;'>📊 Dashboard Cocred</h1>
-    <p style='color: {CORES['texto_escuro']};'>Análise de Campanhas</p>
+    <h1 style='color: {CORES['verde_escuro']}; margin-bottom: 0;'>📊 Dashboard Cocred - Campanhas</h1>
+    <p style='color: {CORES['texto_escuro']};'>Análise consolidada de campanhas</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -285,7 +282,6 @@ def dashboard_metricas(df):
     for nome in possiveis_impacto:
         if nome in df_filtrado.columns:
             col_impacto = nome
-            #st.success(f"✅ Coluna de IMPACTO encontrada: '{col_impacto}'")
             break
     
     col_invest = next((col for col in ['Investimento', 'investimento', 'INVESTIMENTO', 'gasto', 'custo'] if col in df_filtrado.columns), None)
@@ -398,437 +394,93 @@ def dashboard_metricas(df):
     
     st.dataframe(df_exibicao, use_container_width=True, height=400)
     
-    csv = df_filtrado.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Download CSV (filtrado)",
-        data=csv,
-        file_name=f"dados_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-        mime="text/csv"
-    )
-
-# ========== ANÁLISE TEMPORAL ==========
-def analise_temporal(df):
-    """Análise ao longo do tempo - VERSÃO CORRIGIDA PARA 'mês da análise'"""
-    st.subheader("📈 Análise Temporal")
-    
-    # Primeiro, vamos mostrar todas as colunas disponíveis para diagnóstico
-    with st.expander("📋 Ver colunas disponíveis"):
-        st.write("Colunas no DataFrame:", df.columns.tolist())
-    
-    # Identifica colunas de data de forma mais abrangente
-    date_cols = []
-    
-    # 1. Primeiro, procura especificamente por "mês da análise"
-    if 'mês da análise' in df.columns:
-        date_cols.append('mês da análise')
-        st.success("✅ Coluna 'mês da análise' encontrada!")
-    
-    # 2. Depois, procura por outras colunas que possam ser datas
-    for col in df.columns:
-        if col not in date_cols:  # Evita duplicar
-            # Verifica se o nome da coluna sugere data
-            if any(x in col.lower() for x in ['data', 'date', 'mês', 'mes', 'ano', 'year']):
-                date_cols.append(col)
-            # Tenta converter para datetime
-            else:
-                try:
-                    pd.to_datetime(df[col])
-                    date_cols.append(col)
-                except:
-                    pass
-    
-    if not date_cols:
-        st.error("""
-        ⚠️ Nenhuma coluna de data encontrada!
-        
-        As colunas disponíveis são:
-        """ + ", ".join(df.columns.tolist()))
-        
-        # Oferece opção para o usuário selecionar manualmente
-        col_manual = st.selectbox(
-            "Selecione manualmente a coluna que contém a data/mês:",
-            df.columns.tolist()
-        )
-        
-        if col_manual:
-            date_cols = [col_manual]
-            st.info(f"Usando coluna: {col_manual}")
-    
-    if not date_cols:
-        return
-    
-    # Colunas numéricas
-    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    
-    if not numeric_cols:
-        st.warning("Não há colunas numéricas para análise temporal.")
-        return
-    
-    # Configuração principal
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        # Se 'mês da análise' estiver disponível, já deixa como padrão
-        default_data_col = 'mês da análise' if 'mês da análise' in date_cols else date_cols[0]
-        data_col = st.selectbox("Coluna de data/mês:", date_cols, index=date_cols.index(default_data_col))
-    
-    with col2:
-        metrica = st.selectbox("Métrica a analisar:", numeric_cols, key="temp_metrica")
-    
-    with col3:
-        periodo = st.selectbox("Agrupar por:", ['Mês', 'Trimestre', 'Semestre', 'Ano'])
-    
-    # Prepara dados
-    df_temp = df.copy()
-    
-    # Tenta converter a coluna selecionada para datetime
-    try:
-        # Se for 'mês da análise' no formato "Janeiro/2024" ou similar
-        if data_col == 'mês da análise':
-            # Tenta diferentes formatos comuns
-            df_temp['data_analise'] = pd.to_datetime(df_temp[data_col], errors='coerce')
-            
-            # Se falhar, tenta extrair mês e ano de texto
-            if df_temp['data_analise'].isna().all():
-                # Exemplo: "Janeiro/2024" -> extrai mês e ano
-                df_temp['mes_extraido'] = df_temp[data_col].str.extract(r'([A-Za-zç]+)')
-                df_temp['ano_extraido'] = df_temp[data_col].str.extract(r'(\d{4})')
-                
-                # Mapeia nomes de meses para números
-                meses_map = {
-                    'janeiro': 1, 'fevereiro': 2, 'março': 3, 'abril': 4,
-                    'maio': 5, 'junho': 6, 'julho': 7, 'agosto': 8,
-                    'setembro': 9, 'outubro': 10, 'novembro': 11, 'dezembro': 12
-                }
-                
-                df_temp['mes_num'] = df_temp['mes_extraido'].str.lower().map(meses_map)
-                df_temp['data_analise'] = pd.to_datetime(
-                    df_temp['ano_extraido'].astype(str) + '-' + 
-                    df_temp['mes_num'].astype(str) + '-01', 
-                    errors='coerce'
-                )
-        else:
-            df_temp['data_analise'] = pd.to_datetime(df_temp[data_col], errors='coerce')
-        
-        # Remove linhas com data inválida
-        df_temp = df_temp.dropna(subset=['data_analise'])
-        
-        if len(df_temp) == 0:
-            st.error("Não foi possível converter a coluna selecionada para data.")
-            return
-            
-    except Exception as e:
-        st.error(f"Erro ao processar datas: {str(e)}")
-        return
-    
-    # Agrupa por período
-    if periodo == 'Mês':
-        df_temp['periodo'] = df_temp['data_analise'].dt.to_period('M').astype(str)
-        titulo = f"Evolução Mensal de {metrica}"
-    elif periodo == 'Trimestre':
-        df_temp['periodo'] = df_temp['data_analise'].dt.to_period('Q').astype(str)
-        titulo = f"Evolução Trimestral de {metrica}"
-    elif periodo == 'Semestre':
-        df_temp['periodo'] = df_temp['data_analise'].dt.to_period('2Q').astype(str)
-        titulo = f"Evolução Semestral de {metrica}"
-    else:  # Ano
-        df_temp['periodo'] = df_temp['data_analise'].dt.year
-        titulo = f"Evolução Anual de {metrica}"
-    
-    # Agrega
-    temporal = df_temp.groupby('periodo')[metrica].sum().reset_index()
-    temporal = temporal.sort_values('periodo')
-    
-    # ========== GRÁFICO PRINCIPAL ==========
-    fig = px.line(
-        temporal,
-        x='periodo',
-        y=metrica,
-        title=titulo,
-        markers=True,
-        color_discrete_sequence=[CORES['turquesa']]
-    )
-    fig.update_layout(**PLOTLY_TEMA['layout'])
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # ========== ANÁLISE MENSAL DETALHADA ==========
-    if periodo == 'Mês':
-        st.markdown("---")
-        st.subheader("📅 Análise Mensal Detalhada")
-        
-        # Gráfico de barras
-        fig_mensal = px.bar(
-            temporal,
-            x='periodo',
-            y=metrica,
-            title=f"Comparativo Mensal de {metrica}",
-            color_discrete_sequence=[CORES['roxo']],
-            text_auto=True
-        )
-        fig_mensal.update_layout(**PLOTLY_TEMA['layout'])
-        st.plotly_chart(fig_mensal, use_container_width=True)
-        
-        # Tabela
-        st.dataframe(temporal, use_container_width=True)
-        
-        # Estatísticas mensais
-        st.markdown("### 📊 Estatísticas Mensais")
-        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
-        
-        with col_m1:
-            st.metric("Média Mensal", f"{temporal[metrica].mean():,.0f}")
-        with col_m2:
-            st.metric("Total do Período", f"{temporal[metrica].sum():,.0f}")
-        with col_m3:
-            melhor_mes = temporal.loc[temporal[metrica].idxmax(), 'periodo']
-            st.metric("Melhor Mês", melhor_mes)
-        with col_m4:
-            pior_mes = temporal.loc[temporal[metrica].idxmin(), 'periodo']
-            st.metric("Pior Mês", pior_mes)
-        
-        # Crescimento mês a mês
-        st.markdown("### 📈 Crescimento Mês a Mês")
-        temporal['crescimento'] = temporal[metrica].pct_change() * 100
-        temporal['crescimento_formatado'] = temporal['crescimento'].apply(lambda x: f"{x:.1f}%" if pd.notna(x) else "-")
-        
-        crescimento_df = temporal[['periodo', metrica, 'crescimento_formatado']].rename(columns={
-            'periodo': 'Mês',
-            metrica: 'Valor',
-            'crescimento_formatado': 'Crescimento'
-        })
-        st.dataframe(crescimento_df, use_container_width=True)
-    
-    # ========== ESTATÍSTICAS GERAIS ==========
-    st.markdown("---")
-    st.markdown("### 📊 Estatísticas Gerais")
-    
-    col_est1, col_est2, col_est3, col_est4 = st.columns(4)
-    
-    with col_est1:
-        st.metric("Total do Período", f"{temporal[metrica].sum():,.0f}")
-    with col_est2:
-        st.metric("Média por Período", f"{temporal[metrica].mean():,.0f}")
-    with col_est3:
-        st.metric("Melhor Período", temporal.loc[temporal[metrica].idxmax(), 'periodo'])
-    with col_est4:
-        st.metric("Pior Período", temporal.loc[temporal[metrica].idxmin(), 'periodo'])
-    
-    # Download
-    csv_temporal = temporal.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="📥 Download Dados Temporais (CSV)",
-        data=csv_temporal,
-        file_name=f"analise_temporal_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-        mime="text/csv"
-    )
-
-# ========== DEMAIS FUNÇÕES DE ANÁLISE ==========
-
-def analise_comparativa_campanhas(df):
-    """Comparativo entre campanhas"""
-    st.subheader("📊 Comparativo entre Campanhas")
-    
-    campaign_cols = [col for col in df.columns if any(x in col.lower() for x in ['campanha', 'campaign', 'nome', 'name'])]
-    campaign_col = campaign_cols[0] if campaign_cols else df.columns[0]
-    
-    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    
-    if not numeric_cols:
-        st.warning("Não há colunas numéricas para análise comparativa.")
-        return
-    
-    st.markdown("### Configure a comparação")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        metrica_principal = st.selectbox("Métrica principal:", numeric_cols, index=0, key="comp_metrica")
-    
-    with col2:
-        top_n = st.slider("Mostrar top N campanhas:", 5, 20, 10)
-    
-    comparativo = df.groupby(campaign_col).agg({
-        metrica_principal: ['sum', 'mean', 'count']
-    }).round(2)
-    
-    comparativo.columns = ['Total', 'Média', 'Contagem']
-    comparativo = comparativo.sort_values('Total', ascending=False).head(top_n)
-    
-    st.markdown(f"### Top {top_n} Campanhas por {metrica_principal}")
-    
-    # Formata colunas que podem ser percentuais no comparativo
-    df_exibicao = comparativo.copy()
-    for col in df_exibicao.select_dtypes(include=['float64', 'int64']).columns:
-        if df_exibicao[col].min() >= 0 and df_exibicao[col].max() <= 1:
-            if any(palavra in col.lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão']):
-                df_exibicao[col] = df_exibicao[col].apply(lambda x: formatar_percentual(x))
-    
-    st.dataframe(df_exibicao, use_container_width=True)
-    
-    fig = px.bar(
-        comparativo.reset_index(),
-        x=campaign_col,
-        y='Total',
-        title=f"Comparativo de {metrica_principal} por Campanha",
-        labels={'Total': metrica_principal, campaign_col: 'Campanha'},
-        color_discrete_sequence=[CORES['turquesa']]
-    )
-    fig.update_layout(**PLOTLY_TEMA['layout'])
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("### 🏆 Ranking de Performance")
-    ranking = comparativo.reset_index()[[campaign_col, 'Total']].head(5)
-    
-    cores_ranking = [CORES['turquesa'], CORES['roxo'], CORES['verde_claro'], CORES['verde_escuro'], CORES['cinza_escuro']]
-    for idx, (_, row) in enumerate(ranking.iterrows()):
+    # ========== EXPORTAÇÃO DE RELATÓRIOS (EM EXPANDER) ==========
+    with st.expander("📤 **Exportar Relatórios**", expanded=False):
         st.markdown(f"""
-        <div style='background-color: {cores_ranking[idx]}20; padding: 10px; border-radius: 5px; margin: 5px 0; border-left: 5px solid {cores_ranking[idx]};'>
-            <span style='font-size: 18px; font-weight: bold; color: {CORES['texto_escuro']};'>{idx+1}º {row[campaign_col]}</span>
-            <span style='float: right; font-size: 18px; font-weight: bold; color: {cores_ranking[idx]};'>{row['Total']:,.2f}</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-def tabela_dinamica_interativa(df):
-    """Tabela dinâmica configurável"""
-    st.subheader("🔄 Tabela Dinâmica Interativa")
-    
-    st.markdown(f"""
-    <div style='background-color: {CORES['turquesa']}10; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid {CORES['turquesa']};'>
-        <p style='margin: 0; color: {CORES['verde_escuro']};'><strong>💡 Como usar:</strong> Selecione as colunas para linhas, colunas e valores.</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    categorical_cols = df.select_dtypes(include=['object']).columns.tolist()
-    numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    
-    if not categorical_cols or not numeric_cols:
-        st.warning("Precisa de colunas categóricas e numéricas para criar tabela dinâmica.")
-        return
-    
-    col_conf1, col_conf2, col_conf3 = st.columns(3)
-    
-    with col_conf1:
-        linhas = st.multiselect("Linhas (agrupar por):", categorical_cols, default=[categorical_cols[0]] if categorical_cols else [])
-    
-    with col_conf2:
-        colunas = st.multiselect("Colunas (opcional):", categorical_cols, default=[])
-    
-    with col_conf3:
-        valores = st.selectbox("Valores (métrica):", numeric_cols, index=0 if numeric_cols else None)
-        agg_func = st.selectbox("Função de agregação:", ['Soma', 'Média', 'Contagem', 'Máximo', 'Mínimo'])
-    
-    if linhas and valores:
-        agg_map = {'Soma': 'sum', 'Média': 'mean', 'Contagem': 'count', 'Máximo': 'max', 'Mínimo': 'min'}
-        
-        if colunas:
-            pivot = pd.pivot_table(df, values=valores, index=linhas, columns=colunas, aggfunc=agg_map[agg_func], fill_value=0)
-        else:
-            pivot = df.groupby(linhas)[valores].agg(agg_map[agg_func]).reset_index()
-            pivot = pivot.sort_values(valores, ascending=False)
-        
-        st.markdown("### Resultado")
-        
-        # Formata percentuais na tabela dinâmica
-        df_pivot_exibicao = pivot.copy()
-        if isinstance(df_pivot_exibicao, pd.DataFrame):
-            for col in df_pivot_exibicao.select_dtypes(include=['float64', 'int64']).columns:
-                if df_pivot_exibicao[col].min() >= 0 and df_pivot_exibicao[col].max() <= 1:
-                    if any(palavra in str(col).lower() for palavra in ['taxa', 'percentual', 'porcentagem', 'ctr', 'conversão']):
-                        df_pivot_exibicao[col] = df_pivot_exibicao[col].apply(lambda x: formatar_percentual(x))
-        
-        st.dataframe(df_pivot_exibicao, use_container_width=True, height=400)
-        
-        csv_pivot = pivot.to_csv().encode('utf-8')
-        st.download_button(
-            label="📥 Download Tabela Dinâmica (CSV)",
-            data=csv_pivot,
-            file_name=f"tabela_dinamica_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-            mime="text/csv"
-        )
-
-def exportar_relatorios(df):
-    """Aba para exportação de relatórios"""
-    st.subheader("📤 Exportar Relatórios")
-    
-    st.markdown(f"""
-    <div style='background-color: {CORES['roxo']}10; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid {CORES['roxo']};'>
-        <h4 style='margin-top: 0; color: {CORES['roxo']};'>Escolha o formato desejado:</h4>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown(f"""
-        <div style='background-color: white; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']};'>
-            <span style='font-size: 40px;'>📄</span>
-            <h4 style='color: {CORES['verde_escuro']};'>PDF</h4>
-            <p style='color: gray;'>Relatório executivo</p>
+        <div style='background-color: {CORES['roxo']}10; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid {CORES['roxo']};'>
+            <p style='margin: 0; color: {CORES['texto_escuro']};'>Escolha o formato desejado para exportar os dados filtrados:</p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("📥 Gerar PDF", use_container_width=True):
-            with st.spinner("Gerando PDF..."):
-                try:
-                    pdf = gerar_relatorio_pdf(df)
-                    
-                    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
-                        pdf.output(tmp_file.name)
-                        tmp_file_path = tmp_file.name
-                    
-                    with open(tmp_file_path, 'rb') as f:
-                        pdf_bytes = f.read()
-                    
-                    os.unlink(tmp_file_path)
+        col_exp1, col_exp2, col_exp3 = st.columns(3)
+        
+        with col_exp1:
+            st.markdown(f"""
+            <div style='background-color: white; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']}; margin-bottom: 10px;'>
+                <span style='font-size: 30px;'>📄</span>
+                <h5 style='color: {CORES['verde_escuro']}; margin: 5px 0;'>PDF</h5>
+                <p style='color: gray; font-size: 12px; margin: 0;'>Relatório executivo</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("📥 Gerar PDF", key="btn_pdf", use_container_width=True):
+                with st.spinner("Gerando PDF..."):
+                    try:
+                        pdf = gerar_relatorio_pdf(df_filtrado)
+                        
+                        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+                            pdf.output(tmp_file.name)
+                            tmp_file_path = tmp_file.name
+                        
+                        with open(tmp_file_path, 'rb') as f:
+                            pdf_bytes = f.read()
+                        
+                        os.unlink(tmp_file_path)
+                        
+                        st.download_button(
+                            label="📥 Clique para baixar PDF",
+                            data=pdf_bytes,
+                            file_name=f"relatorio_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                            mime="application/pdf",
+                            key="download_pdf"
+                        )
+                    except Exception as e:
+                        st.error(f"Erro ao gerar PDF: {str(e)}")
+        
+        with col_exp2:
+            st.markdown(f"""
+            <div style='background-color: white; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']}; margin-bottom: 10px;'>
+                <span style='font-size: 30px;'>📊</span>
+                <h5 style='color: {CORES['verde_escuro']}; margin: 5px 0;'>Excel</h5>
+                <p style='color: gray; font-size: 12px; margin: 0;'>Planilha completa</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("📥 Gerar Excel", key="btn_excel", use_container_width=True):
+                with st.spinner("Gerando Excel..."):
+                    excel_bytes = exportar_excel_completo(df_filtrado)
                     
                     st.download_button(
-                        label="📥 Clique para baixar PDF",
-                        data=pdf_bytes,
-                        file_name=f"relatorio_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                        mime="application/pdf"
+                        label="📥 Clique para baixar Excel",
+                        data=excel_bytes.getvalue(),
+                        file_name=f"relatorio_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="download_excel"
                     )
-                except Exception as e:
-                    st.error(f"Erro ao gerar PDF: {str(e)}")
-    
-    with col2:
-        st.markdown(f"""
-        <div style='background-color: white; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']};'>
-            <span style='font-size: 40px;'>📊</span>
-            <h4 style='color: {CORES['verde_escuro']};'>Excel</h4>
-            <p style='color: gray;'>Planilha completa</p>
-        </div>
-        """, unsafe_allow_html=True)
         
-        if st.button("📥 Gerar Excel", use_container_width=True):
-            with st.spinner("Gerando Excel..."):
-                excel_bytes = exportar_excel_completo(df)
-                
-                st.download_button(
-                    label="📥 Clique para baixar Excel",
-                    data=excel_bytes.getvalue(),
-                    file_name=f"relatorio_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-    
-    with col3:
-        st.markdown(f"""
-        <div style='background-color: white; padding: 20px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']};'>
-            <span style='font-size: 40px;'>📈</span>
-            <h4 style='color: {CORES['verde_escuro']};'>CSV</h4>
-            <p style='color: gray;'>Dados brutos</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if st.button("📥 Gerar CSV", use_container_width=True):
-            csv = df.to_csv(index=False).encode('utf-8')
+        with col_exp3:
+            st.markdown(f"""
+            <div style='background-color: white; padding: 15px; border-radius: 10px; text-align: center; border: 1px solid {CORES['cinza_claro']}; margin-bottom: 10px;'>
+                <span style='font-size: 30px;'>📈</span>
+                <h5 style='color: {CORES['verde_escuro']}; margin: 5px 0;'>CSV</h5>
+                <p style='color: gray; font-size: 12px; margin: 0;'>Dados brutos</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            csv = df_filtrado.to_csv(index=False).encode('utf-8')
             st.download_button(
-                label="📥 Clique para baixar CSV",
+                label="📥 Download CSV",
                 data=csv,
                 file_name=f"dados_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-                mime="text/csv"
+                mime="text/csv",
+                key="download_csv",
+                use_container_width=True
             )
-    
-    with st.expander("🔍 Preview dos dados que serão exportados"):
-        st.dataframe(df.head(10), use_container_width=True)
+        
+        # Preview dos dados
+        with st.expander("🔍 Preview dos dados que serão exportados", expanded=False):
+            st.dataframe(df_filtrado.head(10), use_container_width=True)
+            st.caption(f"Mostrando 10 de {len(df_filtrado)} linhas")
 
 # ========== INICIALIZAÇÃO ==========
 if 'df' not in st.session_state:
@@ -843,7 +495,7 @@ with st.sidebar:
     st.markdown(f"""
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']}); border-radius: 10px; margin-bottom: 20px;'>
         <h2 style='color: white; margin: 0;'>Cocred</h2>
-        <p style='color: white; margin: 0;'>Relatório de Campanhas</p>
+        <p style='color: white; margin: 0;'>Análise consolidada de campanhas</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -896,162 +548,8 @@ with st.sidebar:
 if st.session_state.df is not None:
     df = st.session_state.df
     
-    # TABS PRINCIPAIS
-    tab1, tab2, tab3 = st.tabs([
-        "📊 Dashboard de Métricas",
-        "📈 Análises Avançadas",
-        "ℹ️ Sobre"
-    ])
-    
-    with tab1:
-        dashboard_metricas(df)
-    
-    with tab2:
-        # Sub-abas de análises avançadas
-        sub_tab1, sub_tab2, sub_tab3, sub_tab4 = st.tabs([
-            "📊 Comparativo Campanhas",
-            "📈 Análise Temporal",
-            "🔄 Tabela Dinâmica",
-            "📤 Exportar Relatórios"
-        ])
-        
-        with sub_tab1:
-            analise_comparativa_campanhas(df)
-        
-        with sub_tab2:
-            analise_temporal(df)
-        
-        with sub_tab3:
-            tabela_dinamica_interativa(df)
-        
-        with sub_tab4:
-            exportar_relatorios(df)
-    
-    with tab3:
-        st.subheader("ℹ️ Sobre o Dashboard")
-        
-        # Card principal
-        st.markdown(f"""
-        <div style='background: linear-gradient(135deg, {CORES['turquesa']}20, {CORES['roxo']}20); padding: 25px; border-radius: 15px; margin-bottom: 20px;'>
-            <h2 style='color: {CORES['verde_escuro']}; margin-top: 0;'>Dashboard Cocred</h2>
-            <p style='font-size: 16px; color: {CORES['texto_escuro']};'>Visualização e análise dos dados de campanhas da Cocred, integrado com SharePoint via Microsoft Graph API.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Funcionalidades em cards
-        st.markdown("### 📌 Funcionalidades")
-        
-        col_func1, col_func2 = st.columns(2)
-        
-        with col_func1:
-            st.markdown(f"""
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['turquesa']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['turquesa']}; margin: 0;'>📊 Dashboard de Métricas</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Filtros interativos, cards com KPIs e explicações detalhadas de CPM e CPL.</p>
-            </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['roxo']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['roxo']}; margin: 0;'>📈 Comparativo entre Campanhas</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Ranking de performance, gráficos comparativos e top N campanhas.</p>
-            </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['verde_escuro']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['verde_escuro']}; margin: 0;'>📅 Análise Temporal</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Evolução por mês, trimestre, semestre e ano com estatísticas detalhadas.</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col_func2:
-            st.markdown(f"""
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['verde_claro']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['verde_escuro']}; margin: 0;'>🔄 Tabela Dinâmica</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Configure suas próprias visões com linhas, colunas e funções de agregação.</p>
-            </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['cinza_escuro']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['cinza_escuro']}; margin: 0;'>📤 Exportação</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Relatórios em PDF, Excel e CSV com preview dos dados.</p>
-            </div>
-            
-            <div style='background-color: white; padding: 15px; border-radius: 10px; border-left: 5px solid {CORES['turquesa']}; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px;'>
-                <h4 style='color: {CORES['turquesa']}; margin: 0;'>🔗 Excel Online</h4>
-                <p style='margin: 5px 0 0 0; color: #666;'>Edição direta no navegador com todas as funcionalidades do Excel.</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Informações técnicas
-        st.markdown("### ⚙️ Informações Técnicas")
-        
-        col_tech1, col_tech2 = st.columns(2)
-        
-        with col_tech1:
-            st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px;'>
-                <h4 style='color: {CORES['verde_escuro']}; margin-top: 0;'>Tecnologias Utilizadas</h4>
-                <ul>
-                    <li>🐍 Python 3.12 e vários frameworks e bibliotecas</li>
-                    <li>📊 Cloud Azure e suas dependências</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col_tech2:
-            st.markdown(f"""
-            <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px;'>
-                <h4 style='color: {CORES['roxo']}; margin-top: 0;'>Cores Institucionais</h4>
-                <div style='display: flex; gap: 15px; flex-wrap: wrap;'>
-                    <div><span style='background-color: {CORES['turquesa']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Turquesa (#00AE9D)</div>
-                    <div><span style='background-color: {CORES['verde_claro']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Verde Claro (#C9D200)</div>
-                    <div><span style='background-color: {CORES['verde_escuro']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Verde Escuro (#003641)</div>
-                    <div><span style='background-color: {CORES['roxo']}; width: 20px; height: 20px; display: inline-block; border-radius: 3px;'></span> Roxo (#49479D)</div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Informações do arquivo atual (se disponível)
-        if st.session_state.file_metadata:
-            st.markdown("### 📁 Arquivo Atual")
-            
-            meta = st.session_state.file_metadata
-            modified = meta.get('lastModifiedDateTime', 'N/A')
-            if modified != 'N/A':
-                modified = datetime.fromisoformat(modified.replace('Z', '+00:00')).strftime('%d/%m/%Y %H:%M')
-            
-            col_file1, col_file2, col_file3 = st.columns(3)
-            
-            with col_file1:
-                st.markdown(f"""
-                <div style='background-color: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center;'>
-                    <p style='margin: 0; font-size: 14px; color: #666;'>Arquivo</p>
-                    <p style='margin: 5px 0 0 0; font-weight: bold;'>{meta.get('name', 'N/A')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col_file2:
-                st.markdown(f"""
-                <div style='background-color: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center;'>
-                    <p style='margin: 0; font-size: 14px; color: #666;'>Última modificação</p>
-                    <p style='margin: 5px 0 0 0; font-weight: bold;'>{modified}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col_file3:
-                st.markdown(f"""
-                <div style='background-color: #e8f4fd; padding: 15px; border-radius: 10px; text-align: center;'>
-                    <p style='margin: 0; font-size: 14px; color: #666;'>Tamanho</p>
-                    <p style='margin: 5px 0 0 0; font-weight: bold;'>{int(meta.get('size', 0))/1024:.1f} KB</p>
-                </div>
-                """, unsafe_allow_html=True)
-        
-        # Versão e créditos
-        st.markdown("---")
-        st.markdown(f"""
-        <div style='text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 10px;'>
-            <p style='margin: 0; color: {CORES['turquesa']}; font-weight: bold;'>Versão 6.4</p>
-            <p style='margin: 5px 0 0 0; color: #666; font-size: 14px;'>Desenvolvido para a Cocred • {datetime.now().strftime('%Y')}</p>
-            <p style='margin: 5px 0 0 0; color: #999; font-size: 12px;'>Integração com SharePoint via Microsoft Graph API</p>
-        </div>
-        """, unsafe_allow_html=True)
+    # Agora apenas o dashboard de métricas, sem abas
+    dashboard_metricas(df)
 
 else:
     # Tela inicial
@@ -1090,7 +588,7 @@ st.markdown(f"""
 <div class='footer'>
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
-    <span style='color: {CORES['roxo']};'>Relatório de Campanhas</span> • 
-    <span>v6.4 - Formatação de Percentuais</span>
+    <span style='color: {CORES['roxo']};'>Visão Geral</span> • 
+    <span>v7.1 - Com Exportação</span>
 </div>
 """, unsafe_allow_html=True)
