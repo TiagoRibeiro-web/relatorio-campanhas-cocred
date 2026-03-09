@@ -394,7 +394,7 @@ def dashboard_metricas(df):
     
     st.dataframe(df_exibicao, use_container_width=True, height=400)
     
-    # ========== EXPORTAÇÃO DE RELATÓRIOS (EM EXPANDER) ==========
+        # ========== EXPORTAÇÃO DE RELATÓRIOS (EM EXPANDER) ==========
     with st.expander("📤 **Exportar Relatórios**", expanded=False):
         st.markdown(f"""
         <div style='background-color: {CORES['roxo']}10; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid {CORES['roxo']};'>
@@ -477,10 +477,11 @@ def dashboard_metricas(df):
                 use_container_width=True
             )
         
-        # Preview dos dados
-        with st.expander("🔍 Preview dos dados que serão exportados", expanded=False):
-            st.dataframe(df_filtrado.head(10), use_container_width=True)
-            st.caption(f"Mostrando 10 de {len(df_filtrado)} linhas")
+        # Preview dos dados - AGORA FORA DO EXPANDER, mas ainda dentro do expander principal
+        st.markdown("---")
+        st.markdown("##### 🔍 Preview dos dados que serão exportados")
+        st.dataframe(df_filtrado.head(10), use_container_width=True)
+        st.caption(f"Mostrando 10 de {len(df_filtrado)} linhas")
 
 # ========== INICIALIZAÇÃO ==========
 if 'df' not in st.session_state:
