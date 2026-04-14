@@ -45,6 +45,8 @@ CATEGORIAS_MEIO = {
 
 def classificar_categoria(meio):
     """Classifica o meio em Patrocinado, Orgânico ou Tradicional"""
+    if pd.isna(meio):
+        return 'Outros'
     for categoria, meios in CATEGORIAS_MEIO.items():
         if meio in meios:
             return categoria
@@ -194,7 +196,8 @@ def criar_cards_metricas(df, categoria):
     """Cria os cards de métricas para uma categoria específica"""
     
     possiveis_impacto = ['Impacto (impressões e entrega de email)', 'Impacto', 'impacto', 'IMPACTO',
-                         'Impressões', 'impressões', 'IMPRESSÕES', 'Impressoes', 'impressoes']
+                         'Impressões', 'impressões', 'IMPRESSÕES', 'Impressoes', 'impressoes',
+                         'Visualizações', 'visualizações', 'VISUALIZAÇÕES', 'views', 'Views']
     
     col_impacto = None
     for nome in possiveis_impacto:
@@ -279,6 +282,12 @@ def dashboard_metricas(df):
     # Adicionar coluna de categoria baseada no Meio
     if 'Meio' in df.columns:
         df['Categoria'] = df['Meio'].apply(classificar_categoria)
+        # Mostrar no sidebar as categorias encontradas (para debug)
+        categorias_encontradas = df['Categoria'].unique().tolist()
+        st.sidebar.success(f"✅ Categorias encontradas: {', '.join(categorias_encontradas)}")
+    else:
+        st.error("❌ Coluna 'Meio' não encontrada na planilha! Verifique o nome da coluna.")
+        df['Categoria'] = 'Não classificado'
     
     st.markdown("### 🔍 FILTROS")
     
@@ -344,11 +353,26 @@ def dashboard_metricas(df):
             veic_sel = st.selectbox("🚗 Veículo", ['Todos'], key="filtro_veiculo")
     
     with col_f6:
+        # Usar os valores reais da coluna Categoria
         if 'Categoria' in df.columns:
-            categorias = ['Todas'] + ['Patrocinado', 'Orgânico', 'Tradicional']
-            cat_sel = st.selectbox("🏷️ Categoria", categorias, key="filtro_categoria")
+            # Pega os valores únicos da coluna Categoria
+            categorias_disponiveis = df['Categoria'].unique().tolist()
+            # Remove 'Outros' se existir
+            if 'Outros' in categorias_disponiveis:
+                categorias_disponiveis.remove('Outros')
+            # Remove 'Não classificado' se existir
+            if 'Não classificado' in categorias_disponiveis:
+                categorias_disponiveis.remove('Não classificado')
+            
+            if categorias_disponiveis:
+                categorias_lista = ['Todas'] + sorted(categorias_disponiveis)
+                cat_sel = st.selectbox("🏷️ Categoria", categorias_lista, key="filtro_categoria")
+            else:
+                cat_sel = st.selectbox("🏷️ Categoria", ['Todas'], key="filtro_categoria")
+                st.warning("⚠️ Nenhuma categoria válida encontrada")
         else:
             cat_sel = st.selectbox("🏷️ Categoria", ['Todas'], key="filtro_categoria")
+            st.warning("⚠️ Categoria não disponível. Verifique se a coluna 'Meio' existe.")
     
     # Aplicar filtros
     df_filtrado = df.copy()
@@ -382,18 +406,24 @@ def dashboard_metricas(df):
             st.markdown(f"### 📈 MÍDIA PATROCINADA")
             criar_cards_metricas(df_patrocinado, 'Patrocinado')
             st.markdown("---")
+        else:
+            st.info("📈 Nenhum dado encontrado para Mídia Patrocinada com os filtros selecionados.")
         
         df_organico = df_filtrado[df_filtrado['Categoria'] == 'Orgânico'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
         if not df_organico.empty:
             st.markdown(f"### 🌱 MÍDIA ORGÂNICA")
             criar_cards_metricas(df_organico, 'Orgânico')
             st.markdown("---")
+        else:
+            st.info("🌱 Nenhum dado encontrado para Mídia Orgânica com os filtros selecionados.")
         
         df_tradicional = df_filtrado[df_filtrado['Categoria'] == 'Tradicional'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
         if not df_tradicional.empty:
             st.markdown(f"### 📺 MÍDIA TRADICIONAL")
             criar_cards_metricas(df_tradicional, 'Tradicional')
             st.markdown("---")
+        else:
+            st.info("📺 Nenhum dado encontrado para Mídia Tradicional com os filtros selecionados.")
     else:
         # Mostra apenas a categoria selecionada
         df_categoria = df_filtrado[df_filtrado['Categoria'] == cat_sel] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
@@ -489,7 +519,7 @@ def dashboard_metricas(df):
                                          f"relatorio_cocred_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
                                          "application/pdf", key="download_pdf")
                     except Exception as e:
-                        st.error(f"Erro: {str(e)}")
+                        st.error(f"Erro ao gerar PDF: {str(e)}")
         
         with col_exp2:
             if st.button("📥 Gerar Excel", key="btn_excel", use_container_width=True):
@@ -507,7 +537,7 @@ def dashboard_metricas(df):
                              "text/csv", key="download_csv", use_container_width=True)
         
         st.markdown("---")
-        st.markdown("##### 🔍 Preview dos dados")
+        st.markdown("##### 🔍 Preview dos dados que serão exportados")
         st.dataframe(df_filtrado.head(10), use_container_width=True)
         st.caption(f"Mostrando 10 de {len(df_filtrado)} linhas")
 
@@ -550,20 +580,20 @@ with st.sidebar:
     
     if st.session_state.file_metadata:
         st.markdown("---")
-        st.subheader("ℹ️ Info")
+        st.subheader("ℹ️ Informações do Arquivo")
         meta = st.session_state.file_metadata
         modified = meta.get('lastModifiedDateTime', 'N/A')
         if modified != 'N/A':
             modified = datetime.fromisoformat(modified.replace('Z', '+00:00')).strftime('%d/%m/%Y %H:%M')
         st.write(f"**Arquivo:** {meta.get('name', 'N/A')}")
-        st.write(f"**Modificado:** {modified}")
+        st.write(f"**Última modificação:** {modified}")
         if st.session_state.df is not None:
-            st.write(f"**Linhas:** {len(st.session_state.df)}")
-            st.write(f"**Colunas:** {len(st.session_state.df.columns)}")
+            st.write(f"**Total de linhas:** {len(st.session_state.df)}")
+            st.write(f"**Total de colunas:** {len(st.session_state.df.columns)}")
     
     if st.session_state.df is not None:
         st.markdown("---")
-        if st.button("🗑️ Limpar", use_container_width=True):
+        if st.button("🗑️ Limpar dados", use_container_width=True):
             st.session_state.df = None
             st.session_state.file_metadata = None
             st.rerun()
@@ -574,12 +604,19 @@ if st.session_state.df is not None:
     dashboard_metricas(df)
 else:
     col1, col2 = st.columns([1, 1])
+    
     with col1:
         st.markdown(f"""
         <div style='background-color: white; padding: 40px; border-radius: 15px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
             <span style='font-size: 60px;'>👋</span>
             <h3 style='color: {CORES['verde_escuro']};'>Bem-vindo ao Dashboard Cocred</h3>
-            <p style='color: gray;'>Clique em 'Carregar Planilha' no menu lateral para começar.</p>
+            <p style='color: gray;'>Clique em <strong>'Carregar Planilha'</strong> no menu lateral para começar.</p>
+            <div style='margin-top: 20px;'>
+                <span style='background-color: {CORES['turquesa']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Turquesa</span>
+                <span style='background-color: {CORES['verde_claro']}; color: {CORES['verde_escuro']}; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Verde Claro</span>
+                <span style='background-color: {CORES['verde_escuro']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Verde Escuro</span>
+                <span style='background-color: {CORES['roxo']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Roxo</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
