@@ -36,11 +36,11 @@ CORES = {
     'alerta': '#FFC107'
 }
 
-# ========== MAPEAMENTO DE CATEGORIAS ==========
+# ========== MAPEAMENTO DE CATEGORIAS (SUA LISTA) ==========
 CATEGORIAS_MEIO = {
-    'Patrocinado': ['Meta Ads', 'LinkedIn', 'Youtube'],
-    'Orgânico': ['Instagram', 'Story', 'Facebook', 'LinkedIn', 'RD Station'],
-    'Tradicional': ['TV', 'Rádio', 'OOH']
+    'Patrocinado': ['Facebook Ads', 'Google Ads', 'Instagram Ads', 'LinkedIn Ads', 'TikTok Ads', 'YouTube Ads', 'Meta Ads'],
+    'Orgânico': ['Instagram Orgânico', 'Facebook Orgânico', 'LinkedIn Orgânico', 'Blog', 'SEO', 'Tráfego Orgânico'],
+    'Tradicional': ['TV', 'Rádio', 'OOH', 'Outdoor', 'LED', 'Revista', 'Jornal', 'Televisão', 'Radio']
 }
 
 def classificar_categoria(meio):
