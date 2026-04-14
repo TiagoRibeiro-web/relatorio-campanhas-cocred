@@ -36,7 +36,7 @@ CORES = {
     'alerta': '#FFC107'
 }
 
-# ========== MAPEAMENTO DE CATEGORIAS (SUA LISTA) ==========
+# ========== MAPEAMENTO DE CATEGORIAS ==========
 CATEGORIAS_MEIO = {
     'Patrocinado': ['Facebook Ads', 'Google Ads', 'Instagram Ads', 'LinkedIn Ads', 'TikTok Ads', 'YouTube Ads', 'Meta Ads'],
     'Orgânico': ['Instagram Orgânico', 'Facebook Orgânico', 'LinkedIn Orgânico', 'Blog', 'SEO', 'Tráfego Orgânico'],
@@ -274,7 +274,7 @@ def criar_cards_metricas(df, categoria):
 
 # ========== DASHBOARD PRINCIPAL ==========
 def dashboard_metricas(df):
-    """Dashboard com filtros, cards de métricas, descrições e tabela geral"""
+    """Dashboard com filtros, cards de métricas dinâmicos por categoria, descrições e tabela geral"""
     
     # Adicionar coluna de categoria baseada no Meio
     if 'Meio' in df.columns:
@@ -345,7 +345,7 @@ def dashboard_metricas(df):
     
     with col_f6:
         if 'Categoria' in df.columns:
-            categorias = ['Todas'] + df['Categoria'].unique().tolist()
+            categorias = ['Todas'] + ['Patrocinado', 'Orgânico', 'Tradicional']
             cat_sel = st.selectbox("🏷️ Categoria", categorias, key="filtro_categoria")
         else:
             cat_sel = st.selectbox("🏷️ Categoria", ['Todas'], key="filtro_categoria")
@@ -373,28 +373,52 @@ def dashboard_metricas(df):
     
     st.markdown("---")
     
-    # ========== BIG NUMBERS SEPARADOS POR CATEGORIA ==========
+    # ========== BIG NUMBERS DINÂMICOS POR CATEGORIA SELECIONADA ==========
     
-    # Patrocinado
-    df_patrocinado = df_filtrado[df_filtrado['Categoria'] == 'Patrocinado'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
-    if not df_patrocinado.empty:
-        st.markdown(f"### 📈 MÍDIA PATROCINADA")
-        criar_cards_metricas(df_patrocinado, 'Patrocinado')
-        st.markdown("---")
-    
-    # Orgânico
-    df_organico = df_filtrado[df_filtrado['Categoria'] == 'Orgânico'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
-    if not df_organico.empty:
-        st.markdown(f"### 🌱 MÍDIA ORGÂNICA")
-        criar_cards_metricas(df_organico, 'Orgânico')
-        st.markdown("---")
-    
-    # Tradicional
-    df_tradicional = df_filtrado[df_filtrado['Categoria'] == 'Tradicional'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
-    if not df_tradicional.empty:
-        st.markdown(f"### 📺 MÍDIA TRADICIONAL")
-        criar_cards_metricas(df_tradicional, 'Tradicional')
-        st.markdown("---")
+    if cat_sel == 'Todas':
+        # Mostra todas as categorias separadas
+        df_patrocinado = df_filtrado[df_filtrado['Categoria'] == 'Patrocinado'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
+        if not df_patrocinado.empty:
+            st.markdown(f"### 📈 MÍDIA PATROCINADA")
+            criar_cards_metricas(df_patrocinado, 'Patrocinado')
+            st.markdown("---")
+        
+        df_organico = df_filtrado[df_filtrado['Categoria'] == 'Orgânico'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
+        if not df_organico.empty:
+            st.markdown(f"### 🌱 MÍDIA ORGÂNICA")
+            criar_cards_metricas(df_organico, 'Orgânico')
+            st.markdown("---")
+        
+        df_tradicional = df_filtrado[df_filtrado['Categoria'] == 'Tradicional'] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
+        if not df_tradicional.empty:
+            st.markdown(f"### 📺 MÍDIA TRADICIONAL")
+            criar_cards_metricas(df_tradicional, 'Tradicional')
+            st.markdown("---")
+    else:
+        # Mostra apenas a categoria selecionada
+        df_categoria = df_filtrado[df_filtrado['Categoria'] == cat_sel] if 'Categoria' in df_filtrado.columns else pd.DataFrame()
+        if not df_categoria.empty:
+            # Define o ícone e título baseado na categoria
+            if cat_sel == 'Patrocinado':
+                icone = "📈"
+                cor_titulo = CORES['turquesa']
+            elif cat_sel == 'Orgânico':
+                icone = "🌱"
+                cor_titulo = CORES['verde_escuro']
+            else:  # Tradicional
+                icone = "📺"
+                cor_titulo = CORES['roxo']
+            
+            st.markdown(f"""
+            <div style='background: linear-gradient(135deg, {cor_titulo}10, {cor_titulo}30); padding: 15px; border-radius: 10px; margin-bottom: 15px;'>
+                <h3 style='color: {cor_titulo}; margin: 0;'>{icone} MÍDIA {cat_sel.upper()}</h3>
+            </div>
+            """, unsafe_allow_html=True)
+            criar_cards_metricas(df_categoria, cat_sel)
+            st.markdown("---")
+        else:
+            st.warning(f"Nenhum dado encontrado para a categoria {cat_sel} com os filtros selecionados.")
+            st.markdown("---")
     
     # ========== DESCRIÇÕES DAS MÉTRICAS ==========
     st.markdown("### 📘 Entendendo as Métricas")
@@ -578,6 +602,6 @@ st.markdown(f"""
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['roxo']};'>Visão Geral</span> • 
-    <span>v8.0 - Com Separação por Categoria</span>
+    <span>v9.0 - Cards Dinâmicos por Categoria</span>
 </div>
 """, unsafe_allow_html=True)
