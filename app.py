@@ -201,8 +201,8 @@ def dashboard_metricas(df):
     ]
     
     possiveis_mes = [
-        'Mês', 'Mês da Campanha', 'mes', 'MES', 'MÊS',
-        'Mes', 'MES', 'Mês do ano', 'mes_ano', 'Periodo'
+        'Mês', 'Mês da Campanha', 'Mês da Análise', 'mes', 'MES', 'MÊS',
+        'Mes', 'MES', 'Mês do ano', 'mes_ano', 'Periodo', 'Mes da Analise'
     ]
     
     col_ano = None
