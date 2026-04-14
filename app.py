@@ -194,46 +194,91 @@ def dashboard_metricas(df):
     
     st.markdown("### 🔍 FILTROS")
     
-    # Filtros em linha
-    col_f1, col_f2, col_f3, col_f4 = st.columns(4)
+    # Buscar colunas disponíveis
+    possiveis_ano = [
+        'Ano da Campanha', 'Ano', 'ano', 'ANO',
+        'Ano da campanha', 'ano da campanha'
+    ]
+    
+    possiveis_mes = [
+        'Mês', 'Mês da Campanha', 'mes', 'MES', 'MÊS',
+        'Mes', 'MES', 'Mês do ano', 'mes_ano', 'Periodo'
+    ]
+    
+    col_ano = None
+    for nome in possiveis_ano:
+        if nome in df.columns:
+            col_ano = nome
+            break
+    
+    col_mes = None
+    for nome in possiveis_mes:
+        if nome in df.columns:
+            col_mes = nome
+            break
+    
+    # Filtros em 5 colunas (agora com Mês)
+    col_f1, col_f2, col_f3, col_f4, col_f5 = st.columns(5)
     
     with col_f1:
-        # Busca por "Ano da Campanha"
-        possiveis_ano = [
-            'Ano da Campanha',
-            'Ano', 'ano', 'ANO',
-            'Ano da campanha', 'ano da campanha'
-        ]
-        
-        col_ano = None
-        for nome in possiveis_ano:
-            if nome in df.columns:
-                col_ano = nome
-                break
-        
         if col_ano:
-            anos = ['Todos'] + sorted(df[col_ano].astype(str).unique().tolist())
-            ano_sel = st.selectbox("Ano", anos, key="filtro_ano")
+            # Ordenar anos corretamente
+            anos_lista = sorted(df[col_ano].astype(str).unique().tolist())
+            anos = ['Todos'] + anos_lista
+            ano_sel = st.selectbox("📅 Ano", anos, key="filtro_ano")
         else:
-            ano_sel = st.selectbox("Ano", ['Todos'], key="filtro_ano")
-            st.caption("⚠️ Coluna 'Ano da Campanha' não encontrada")
+            ano_sel = st.selectbox("📅 Ano", ['Todos'], key="filtro_ano")
+            st.caption("⚠️ Coluna 'Ano' não encontrada")
     
     with col_f2:
+        if col_mes:
+            # Ordenar meses (Janeiro = 1, etc.)
+            try:
+                # Tenta converter para número para ordenar
+                meses_ordenados = sorted(df[col_mes].unique(), key=lambda x: int(x) if str(x).isdigit() else str(x))
+                # Se for número, adiciona nome do mês
+                meses_formatados = []
+                for mes in meses_ordenados:
+                    if str(mes).isdigit() and 1 <= int(mes) <= 12:
+                        nomes_meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                                      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+                        meses_formatados.append(f"{nomes_meses[int(mes)-1]} ({mes})")
+                    else:
+                        meses_formatados.append(str(mes))
+                
+                meses_lista = ['Todos'] + meses_formatados
+                # Mapeamento para filtro
+                mes_mapeamento = {fmt: orig for fmt, orig in zip(meses_formatados, sorted(df[col_mes].unique(), key=lambda x: int(x) if str(x).isdigit() else str(x)))}
+                mes_sel_display = st.selectbox("📆 Mês", meses_lista, key="filtro_mes")
+                
+                if mes_sel_display != 'Todos':
+                    mes_sel = mes_mapeamento[mes_sel_display]
+                else:
+                    mes_sel = 'Todos'
+            except:
+                # Fallback: ordenação simples
+                meses = ['Todos'] + sorted(df[col_mes].astype(str).unique().tolist())
+                mes_sel = st.selectbox("📆 Mês", meses, key="filtro_mes")
+        else:
+            mes_sel = st.selectbox("📆 Mês", ['Todos'], key="filtro_mes")
+            st.caption("⚠️ Coluna 'Mês' não encontrada")
+    
+    with col_f3:
         camp_cols = [col for col in df.columns if any(x in col.lower() for x in ['campanha', 'campaign'])]
         if camp_cols:
             camps = ['Todas'] + df[camp_cols[0]].unique().tolist()
-            camp_sel = st.selectbox("Campanha", camps, key="filtro_campanha")
+            camp_sel = st.selectbox("🎯 Campanha", camps, key="filtro_campanha")
         else:
-            camp_sel = st.selectbox("Campanha", ['Todas'], key="filtro_campanha")
-    
-    with col_f3:
-        if 'Meio' in df.columns:
-            meios = ['Todos'] + df['Meio'].unique().tolist()
-            meio_sel = st.selectbox("Meio", meios, key="filtro_meio")
-        else:
-            meio_sel = st.selectbox("Meio", ['Todos'], key="filtro_meio")
+            camp_sel = st.selectbox("🎯 Campanha", ['Todas'], key="filtro_campanha")
     
     with col_f4:
+        if 'Meio' in df.columns:
+            meios = ['Todos'] + df['Meio'].unique().tolist()
+            meio_sel = st.selectbox("📢 Meio", meios, key="filtro_meio")
+        else:
+            meio_sel = st.selectbox("📢 Meio", ['Todos'], key="filtro_meio")
+    
+    with col_f5:
         veic_col = None
         if 'Veículo' in df.columns:
             veic_col = 'Veículo'
@@ -242,15 +287,18 @@ def dashboard_metricas(df):
         
         if veic_col:
             veics = ['Todos'] + df[veic_col].unique().tolist()
-            veic_sel = st.selectbox("Veículo", veics, key="filtro_veiculo")
+            veic_sel = st.selectbox("🚗 Veículo", veics, key="filtro_veiculo")
         else:
-            veic_sel = st.selectbox("Veículo", ['Todos'], key="filtro_veiculo")
+            veic_sel = st.selectbox("🚗 Veículo", ['Todos'], key="filtro_veiculo")
     
     # Aplicar filtros
     df_filtrado = df.copy()
     
     if col_ano and ano_sel != 'Todos':
         df_filtrado = df_filtrado[df_filtrado[col_ano].astype(str) == ano_sel]
+    
+    if col_mes and mes_sel != 'Todos':
+        df_filtrado = df_filtrado[df_filtrado[col_mes].astype(str) == str(mes_sel)]
     
     if camp_cols and camp_sel != 'Todas':
         df_filtrado = df_filtrado[df_filtrado[camp_cols[0]] == camp_sel]
@@ -394,7 +442,7 @@ def dashboard_metricas(df):
     
     st.dataframe(df_exibicao, use_container_width=True, height=400)
     
-        # ========== EXPORTAÇÃO DE RELATÓRIOS (EM EXPANDER) ==========
+    # ========== EXPORTAÇÃO DE RELATÓRIOS (EM EXPANDER) ==========
     with st.expander("📤 **Exportar Relatórios**", expanded=False):
         st.markdown(f"""
         <div style='background-color: {CORES['roxo']}10; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid {CORES['roxo']};'>
@@ -477,7 +525,7 @@ def dashboard_metricas(df):
                 use_container_width=True
             )
         
-        # Preview dos dados - AGORA FORA DO EXPANDER, mas ainda dentro do expander principal
+        # Preview dos dados
         st.markdown("---")
         st.markdown("##### 🔍 Preview dos dados que serão exportados")
         st.dataframe(df_filtrado.head(10), use_container_width=True)
@@ -590,6 +638,6 @@ st.markdown(f"""
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['roxo']};'>Visão Geral</span> • 
-    <span>v7.1 - Com Exportação</span>
+    <span>v7.1 - Com Filtro de Mês</span>
 </div>
 """, unsafe_allow_html=True)
