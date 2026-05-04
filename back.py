@@ -147,7 +147,7 @@ st.markdown(f"""
 st.markdown(f"""
 <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {CORES['turquesa']}20, {CORES['roxo']}20); border-radius: 15px; margin-bottom: 20px;'>
     <h1 style='color: {CORES['verde_escuro']}; margin-bottom: 0;'>📊 Dashboard Cocred - Campanhas</h1>
-    <p style='color: {CORES['texto_escuro']};'>Análise consolidada de campanhas | Mídia ON e OFF</p>
+    <p style='color: {CORES['texto_escuro']};'>Análise consolidada de campanhas | Mídia ON, OFF e Orgânica</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -438,13 +438,14 @@ def criar_cards_consolidados(df):
                     </div>
                     """, unsafe_allow_html=True)
 
-# ========== FUNÇÃO PARA COMPARAR CAMPANHAS ==========
+# ========== FUNÇÃO PARA COMPARAR CAMPANHAS (COM FILTROS DE MEIO E VEÍCULO) ==========
 def comparar_campanhas(df):
     """Função para comparar duas campanhas lado a lado com filtros independentes"""
     
     st.markdown("### 📈 COMPARAR CAMPANHAS")
-    st.markdown("Selecione duas campanhas e seus respectivos períodos para comparar.")
+    st.markdown("Selecione duas campanhas e seus respectivos filtros para comparar.")
     
+    # Buscar colunas
     camp_cols = [col for col in df.columns if any(x in col.lower() for x in ['campanha', 'campaign'])]
     
     if not camp_cols:
@@ -456,7 +457,9 @@ def comparar_campanhas(df):
     
     ano_col = next((col for col in ['Ano da Campanha', 'Ano', 'ano', 'ANO'] if col in df.columns), None)
     mes_col = next((col for col in ['Mês da Análise', 'Mês', 'mes', 'MES'] if col in df.columns), None)
+    veic_col = 'Veículo' if 'Veículo' in df.columns else ('Veiculo' if 'Veiculo' in df.columns else None)
     
+    # Opções de filtros
     if ano_col:
         anos_disponiveis = ['Todos'] + sorted(df[ano_col].astype(str).unique().tolist())
     else:
@@ -467,7 +470,18 @@ def comparar_campanhas(df):
     else:
         meses_disponiveis = ['Todos']
     
-    st.markdown("#### 🎯 Seleção de Campanhas e Períodos")
+    if 'Meio' in df.columns:
+        meios_disponiveis = ['Todos'] + sorted(df['Meio'].unique().tolist())
+    else:
+        meios_disponiveis = ['Todos']
+    
+    if veic_col:
+        veiculos_disponiveis = ['Todos'] + sorted(df[veic_col].unique().tolist())
+    else:
+        veiculos_disponiveis = ['Todos']
+    
+    # ========== SELEÇÃO DAS CAMPANHAS COM FILTROS INDEPENDENTES ==========
+    st.markdown("#### 🎯 Seleção de Campanhas e Filtros")
     
     col_c1, col_c2 = st.columns(2)
     
@@ -475,34 +489,52 @@ def comparar_campanhas(df):
         st.markdown("##### 📌 CAMPANHA 1")
         campanha1 = st.selectbox("Campanha", campanhas_disponiveis, key="camp1")
         
-        if ano_col:
-            ano1 = st.selectbox("Ano", anos_disponiveis, key="ano1")
-        else:
-            ano1 = 'Todos'
+        col_f1a, col_f1b = st.columns(2)
+        with col_f1a:
+            if ano_col:
+                ano1 = st.selectbox("Ano", anos_disponiveis, key="ano1")
+            else:
+                ano1 = 'Todos'
+        with col_f1b:
+            if mes_col:
+                mes1 = st.selectbox("Mês", meses_disponiveis, key="mes1")
+            else:
+                mes1 = 'Todos'
         
-        if mes_col:
-            mes1 = st.selectbox("Mês", meses_disponiveis, key="mes1")
-        else:
-            mes1 = 'Todos'
+        col_f1c, col_f1d = st.columns(2)
+        with col_f1c:
+            meio1 = st.selectbox("Meio", meios_disponiveis, key="meio1")
+        with col_f1d:
+            veiculo1 = st.selectbox("Veículo", veiculos_disponiveis, key="veiculo1")
     
     with col_c2:
         st.markdown("##### 📌 CAMPANHA 2")
         campanha2 = st.selectbox("Campanha", campanhas_disponiveis, key="camp2")
         
-        if ano_col:
-            ano2 = st.selectbox("Ano", anos_disponiveis, key="ano2")
-        else:
-            ano2 = 'Todos'
+        col_f2a, col_f2b = st.columns(2)
+        with col_f2a:
+            if ano_col:
+                ano2 = st.selectbox("Ano", anos_disponiveis, key="ano2")
+            else:
+                ano2 = 'Todos'
+        with col_f2b:
+            if mes_col:
+                mes2 = st.selectbox("Mês", meses_disponiveis, key="mes2")
+            else:
+                mes2 = 'Todos'
         
-        if mes_col:
-            mes2 = st.selectbox("Mês", meses_disponiveis, key="mes2")
-        else:
-            mes2 = 'Todos'
+        col_f2c, col_f2d = st.columns(2)
+        with col_f2c:
+            meio2 = st.selectbox("Meio", meios_disponiveis, key="meio2")
+        with col_f2d:
+            veiculo2 = st.selectbox("Veículo", veiculos_disponiveis, key="veiculo2")
     
-    if campanha1 == campanha2 and ano1 == ano2 and mes1 == mes2:
-        st.warning("⚠️ Selecione campanhas ou períodos diferentes para comparar!")
+    # Verificar se selecionou a mesma campanha com os mesmos filtros
+    if campanha1 == campanha2 and ano1 == ano2 and mes1 == mes2 and meio1 == meio2 and veiculo1 == veiculo2:
+        st.warning("⚠️ Selecione campanhas ou filtros diferentes para comparar!")
         return
     
+    # ========== FILTRAR DADOS DA CAMPANHA 1 ==========
     df_camp1 = df[df[col_campanha] == campanha1].copy()
     
     if ano_col and ano1 != 'Todos':
@@ -511,6 +543,13 @@ def comparar_campanhas(df):
     if mes_col and mes1 != 'Todos':
         df_camp1 = df_camp1[df_camp1[mes_col].astype(str) == mes1]
     
+    if 'Meio' in df.columns and meio1 != 'Todos':
+        df_camp1 = df_camp1[df_camp1['Meio'] == meio1]
+    
+    if veic_col and veiculo1 != 'Todos':
+        df_camp1 = df_camp1[df_camp1[veic_col] == veiculo1]
+    
+    # ========== FILTRAR DADOS DA CAMPANHA 2 ==========
     df_camp2 = df[df[col_campanha] == campanha2].copy()
     
     if ano_col and ano2 != 'Todos':
@@ -519,41 +558,60 @@ def comparar_campanhas(df):
     if mes_col and mes2 != 'Todos':
         df_camp2 = df_camp2[df_camp2[mes_col].astype(str) == mes2]
     
+    if 'Meio' in df.columns and meio2 != 'Todos':
+        df_camp2 = df_camp2[df_camp2['Meio'] == meio2]
+    
+    if veic_col and veiculo2 != 'Todos':
+        df_camp2 = df_camp2[df_camp2[veic_col] == veiculo2]
+    
+    # Buscar colunas de métricas
     col_impacto_pago = 'Impacto Pago' if 'Impacto Pago' in df.columns else None
     col_invest = 'Investimento' if 'Investimento' in df.columns else None
     col_leads = 'Leads' if 'Leads' in df.columns else None
     
+    # Calcular métricas para Campanha 1
     impacto1 = df_camp1[col_impacto_pago].sum() if col_impacto_pago and not df_camp1.empty else 0
     invest1 = df_camp1[col_invest].sum() if col_invest and not df_camp1.empty else 0
     leads1 = df_camp1[col_leads].sum() if col_leads and not df_camp1.empty else 0
     cpm1 = (invest1 / impacto1 * 1000) if impacto1 > 0 else 0
     cpl1 = (invest1 / leads1) if leads1 > 0 else 0
     
+    # Calcular métricas para Campanha 2
     impacto2 = df_camp2[col_impacto_pago].sum() if col_impacto_pago and not df_camp2.empty else 0
     invest2 = df_camp2[col_invest].sum() if col_invest and not df_camp2.empty else 0
     leads2 = df_camp2[col_leads].sum() if col_leads and not df_camp2.empty else 0
     cpm2 = (invest2 / impacto2 * 1000) if impacto2 > 0 else 0
     cpl2 = (invest2 / leads2) if leads2 > 0 else 0
     
+    # ========== MONTAR DESCRIÇÃO DOS PERÍODOS ==========
     st.markdown("---")
     col_info1, col_info2 = st.columns(2)
     
     with col_info1:
         periodo1 = f"{campanha1}"
         if ano1 != 'Todos':
-            periodo1 += f" - {ano1}"
+            periodo1 += f" | {ano1}"
         if mes1 != 'Todos':
-            periodo1 += f" - {mes1}"
-        st.caption(f"📊 **Período 1:** {periodo1}")
+            periodo1 += f" | {mes1}"
+        if meio1 != 'Todos':
+            periodo1 += f" | {meio1}"
+        if veiculo1 != 'Todos':
+            periodo1 += f" | {veiculo1}"
+        st.caption(f"📊 **Campanha 1:** {periodo1}")
     
     with col_info2:
         periodo2 = f"{campanha2}"
         if ano2 != 'Todos':
-            periodo2 += f" - {ano2}"
+            periodo2 += f" | {ano2}"
         if mes2 != 'Todos':
-            periodo2 += f" - {mes2}"
-        st.caption(f"📊 **Período 2:** {periodo2}")
+            periodo2 += f" | {mes2}"
+        if meio2 != 'Todos':
+            periodo2 += f" | {meio2}"
+        if veiculo2 != 'Todos':
+            periodo2 += f" | {veiculo2}"
+        st.caption(f"📊 **Campanha 2:** {periodo2}")
     
+    # ========== CARDS DE COMPARAÇÃO COM EFEITO NEON ==========
     st.markdown("### 📊 COMPARAÇÃO DE MÉTRICAS")
     
     # Impacto
@@ -563,7 +621,7 @@ def comparar_campanhas(df):
         <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>IMPACTO</p>
             <p style='color: {CORES['turquesa']}; margin: 0; font-size: 28px; font-weight: bold;'>{impacto1:,.0f}</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px;'>{periodo1}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha1}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -572,7 +630,7 @@ def comparar_campanhas(df):
         <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>IMPACTO</p>
             <p style='color: {CORES['roxo']}; margin: 0; font-size: 28px; font-weight: bold;'>{impacto2:,.0f}</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px;'>{periodo2}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha2}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -584,7 +642,6 @@ def comparar_campanhas(df):
         <div class='neon-card' style='background-color: {CORES['cinza_claro']}50; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>VARIAÇÃO</p>
             <p style='color: {cor_variacao}; margin: 0; font-size: 24px; font-weight: bold;'>{sinal}{variacao_impacto:.1f}%</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{periodo1} vs {periodo2}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -597,7 +654,7 @@ def comparar_campanhas(df):
         <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>INVESTIMENTO</p>
             <p style='color: {CORES['turquesa']}; margin: 0; font-size: 28px; font-weight: bold;'>R$ {invest1:,.2f}</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px;'>{periodo1}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha1}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -606,7 +663,7 @@ def comparar_campanhas(df):
         <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>INVESTIMENTO</p>
             <p style='color: {CORES['roxo']}; margin: 0; font-size: 28px; font-weight: bold;'>R$ {invest2:,.2f}</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px;'>{periodo2}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha2}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -618,7 +675,6 @@ def comparar_campanhas(df):
         <div class='neon-card' style='background-color: {CORES['cinza_claro']}50; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>VARIAÇÃO</p>
             <p style='color: {cor_variacao}; margin: 0; font-size: 24px; font-weight: bold;'>{sinal}{variacao_invest:.1f}%</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{periodo1} vs {periodo2}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -631,7 +687,7 @@ def comparar_campanhas(df):
         <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>LEADS</p>
             <p style='color: {CORES['turquesa']}; margin: 0; font-size: 28px; font-weight: bold;'>{leads1:,.0f}</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px;'>{periodo1}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha1}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -640,7 +696,7 @@ def comparar_campanhas(df):
         <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>LEADS</p>
             <p style='color: {CORES['roxo']}; margin: 0; font-size: 28px; font-weight: bold;'>{leads2:,.0f}</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px;'>{periodo2}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha2}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -652,13 +708,12 @@ def comparar_campanhas(df):
         <div class='neon-card' style='background-color: {CORES['cinza_claro']}50; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>VARIAÇÃO</p>
             <p style='color: {cor_variacao}; margin: 0; font-size: 24px; font-weight: bold;'>{sinal}{variacao_leads:.1f}%</p>
-            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{periodo1} vs {periodo2}</p>
         </div>
         """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # CPM e CPL
+    # CPM e CPL lado a lado
     col1, col2 = st.columns(2)
     
     with col1:
@@ -667,14 +722,14 @@ def comparar_campanhas(df):
         with col_cpm1:
             st.markdown(f"""
             <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{periodo1}</p>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha1}</p>
                 <p style='color: {CORES['turquesa']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpm1:.2f}</p>
             </div>
             """, unsafe_allow_html=True)
         with col_cpm2:
             st.markdown(f"""
             <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{periodo2}</p>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha2}</p>
                 <p style='color: {CORES['roxo']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpm2:.2f}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -685,90 +740,188 @@ def comparar_campanhas(df):
         with col_cpl1:
             st.markdown(f"""
             <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{periodo1}</p>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha1}</p>
                 <p style='color: {CORES['turquesa']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpl1:.2f}</p>
             </div>
             """, unsafe_allow_html=True)
         with col_cpl2:
             st.markdown(f"""
             <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{periodo2}</p>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha2}</p>
                 <p style='color: {CORES['roxo']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpl2:.2f}</p>
             </div>
             """, unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # Gráficos
+    # ========== GRÁFICOS EM EXPANDERS ==========
     st.markdown("### 📊 GRÁFICOS COMPARATIVOS")
+    st.markdown("*Clique em cada métrica para expandir o gráfico*")
     
-    fig1 = go.Figure()
+    # Expander 1: Impacto
+    with st.expander("📊 IMPACTO", expanded=False):
+        fig_impacto = go.Figure()
+        
+        fig_impacto.add_trace(go.Bar(
+            name=campanha1,
+            x=['Impacto'],
+            y=[impacto1],
+            marker_color=CORES['turquesa'],
+            text=[f'{impacto1:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_impacto.add_trace(go.Bar(
+            name=campanha2,
+            x=['Impacto'],
+            y=[impacto2],
+            marker_color=CORES['roxo'],
+            text=[f'{impacto2:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_impacto.update_layout(
+            title="Comparação de Impacto",
+            barmode='group',
+            yaxis_title="Impactos",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_impacto, use_container_width=True)
     
-    metricas = ['Impacto', 'Investimento', 'Leads']
-    valores1 = [impacto1, invest1, leads1]
-    valores2 = [impacto2, invest2, leads2]
+    # Expander 2: Investimento
+    with st.expander("💰 INVESTIMENTO", expanded=False):
+        fig_invest = go.Figure()
+        
+        fig_invest.add_trace(go.Bar(
+            name=campanha1,
+            x=['Investimento'],
+            y=[invest1],
+            marker_color=CORES['turquesa'],
+            text=[f'R$ {invest1:,.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_invest.add_trace(go.Bar(
+            name=campanha2,
+            x=['Investimento'],
+            y=[invest2],
+            marker_color=CORES['roxo'],
+            text=[f'R$ {invest2:,.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_invest.update_layout(
+            title="Comparação de Investimento",
+            barmode='group',
+            yaxis_title="Investimento (R$)",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_invest, use_container_width=True)
     
-    fig1.add_trace(go.Bar(
-        name=periodo1,
-        x=metricas,
-        y=valores1,
-        marker_color=CORES['turquesa'],
-        text=[f'{v:,.0f}' for v in valores1],
-        textposition='outside'
-    ))
+    # Expander 3: Leads
+    with st.expander("🎯 LEADS", expanded=False):
+        fig_leads = go.Figure()
+        
+        fig_leads.add_trace(go.Bar(
+            name=campanha1,
+            x=['Leads'],
+            y=[leads1],
+            marker_color=CORES['turquesa'],
+            text=[f'{leads1:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_leads.add_trace(go.Bar(
+            name=campanha2,
+            x=['Leads'],
+            y=[leads2],
+            marker_color=CORES['roxo'],
+            text=[f'{leads2:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_leads.update_layout(
+            title="Comparação de Leads",
+            barmode='group',
+            yaxis_title="Leads",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_leads, use_container_width=True)
     
-    fig1.add_trace(go.Bar(
-        name=periodo2,
-        x=metricas,
-        y=valores2,
-        marker_color=CORES['roxo'],
-        text=[f'{v:,.0f}' for v in valores2],
-        textposition='outside'
-    ))
+    # Expander 4: CPM
+    with st.expander("📈 CPM (CUSTO POR MIL IMPACTOS)", expanded=False):
+        fig_cpm = go.Figure()
+        
+        fig_cpm.add_trace(go.Bar(
+            name=campanha1,
+            x=['CPM'],
+            y=[cpm1],
+            marker_color=CORES['turquesa'],
+            text=[f'R$ {cpm1:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpm.add_trace(go.Bar(
+            name=campanha2,
+            x=['CPM'],
+            y=[cpm2],
+            marker_color=CORES['roxo'],
+            text=[f'R$ {cpm2:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpm.update_layout(
+            title="Comparação de CPM",
+            barmode='group',
+            yaxis_title="CPM (R$)",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_cpm, use_container_width=True)
     
-    fig1.update_layout(
-        title="Comparação: Impacto, Investimento e Leads",
-        barmode='group',
-        yaxis_title="Valor",
-        plot_bgcolor='white',
-        height=450
-    )
-    
-    st.plotly_chart(fig1, use_container_width=True)
-    
-    fig2 = go.Figure()
-    
-    metricas_custo = ['CPM (R$)', 'CPL (R$)']
-    valores1_custo = [cpm1, cpl1]
-    valores2_custo = [cpm2, cpl2]
-    
-    fig2.add_trace(go.Bar(
-        name=periodo1,
-        x=metricas_custo,
-        y=valores1_custo,
-        marker_color=CORES['turquesa'],
-        text=[f'R$ {v:.2f}' for v in valores1_custo],
-        textposition='outside'
-    ))
-    
-    fig2.add_trace(go.Bar(
-        name=periodo2,
-        x=metricas_custo,
-        y=valores2_custo,
-        marker_color=CORES['roxo'],
-        text=[f'R$ {v:.2f}' for v in valores2_custo],
-        textposition='outside'
-    ))
-    
-    fig2.update_layout(
-        title="Comparação: CPM e CPL",
-        barmode='group',
-        yaxis_title="Valor (R$)",
-        plot_bgcolor='white',
-        height=450
-    )
-    
-    st.plotly_chart(fig2, use_container_width=True)
+    # Expander 5: CPL
+    with st.expander("💵 CPL (CUSTO POR LEAD)", expanded=False):
+        fig_cpl = go.Figure()
+        
+        fig_cpl.add_trace(go.Bar(
+            name=campanha1,
+            x=['CPL'],
+            y=[cpl1],
+            marker_color=CORES['turquesa'],
+            text=[f'R$ {cpl1:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpl.add_trace(go.Bar(
+            name=campanha2,
+            x=['CPL'],
+            y=[cpl2],
+            marker_color=CORES['roxo'],
+            text=[f'R$ {cpl2:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpl.update_layout(
+            title="Comparação de CPL",
+            barmode='group',
+            yaxis_title="CPL (R$)",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_cpl, use_container_width=True)
     
     # Tabela comparativa
     st.markdown("---")
@@ -980,7 +1133,7 @@ with st.sidebar:
     st.markdown(f"""
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']}); border-radius: 10px; margin-bottom: 20px;'>
         <h2 style='color: white; margin: 0;'>Cocred</h2>
-        <p style='color: white; margin: 0;'>Análise de Mídia ON e OFF</p>
+        <p style='color: white; margin: 0;'>Análise de Campanhas</p>
     </div>
     """, unsafe_allow_html=True)
     

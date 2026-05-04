@@ -8,6 +8,8 @@ secrets.toml
 # Versões alternativas e backups que NÃO vão para o GitHub
 simple.py
 backup.py
+back.py
+teste2.py
 teste.py
 dev.py
 local.py
