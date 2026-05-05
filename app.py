@@ -23,6 +23,7 @@ CORES = {
     'verde_claro': '#C9D200',
     'verde_escuro': '#003641',
     'roxo': '#49479D',
+    'azul': '#1E88E5',
     'background': '#F5F7FA',
     'texto_escuro': '#2C3E50',
     'texto_claro': '#FFFFFF',
@@ -32,12 +33,13 @@ CORES = {
     'cinza_escuro': '#666666',
     'sucesso': '#28A745',
     'erro': '#DC3545',
-    'alerta': '#FFC107'
+    'alerta': '#FFC107',
+    'laranja': '#FF6B35'
 }
 
 # ========== MAPEAMENTO DE CATEGORIAS ==========
 CATEGORIAS_MEIO = {
-    'Patrocinado': ['Patrocinado'],
+    'Digital': ['Patrocinado'],
     'Orgânico': ['Orgânico'],
     'Tradicional': ['TV', 'Rádio', 'OOH']
 }
@@ -54,15 +56,12 @@ def get_categoria(meio):
 def get_impacto_column(df, categoria):
     """Retorna o nome da coluna de impacto correta baseado na categoria"""
     if categoria == 'Orgânico':
-        return 'Impacto Ogânico (impressões e entrega de email)'
-    elif categoria == 'Patrocinado':
-        return 'Impacto Pago'
-    else:  # Tradicional
-        possiveis_impacto = ['Impacto', 'impacto', 'IMPACTO', 'Impressões', 'impressões']
-        for col in possiveis_impacto:
-            if col in df.columns:
+        for col in df.columns:
+            if 'impacto' in col.lower() and 'orgânico' in col.lower():
                 return col
-        return None
+        return 'Impacto Ogânico (impressões e entrega de email)' if 'Impacto Ogânico (impressões e entrega de email)' in df.columns else None
+    else:
+        return 'Impacto Pago' if 'Impacto Pago' in df.columns else None
 
 # Configuração do tema Plotly
 PLOTLY_TEMA = {
@@ -94,7 +93,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS personalizado
+# CSS personalizado com efeito neon
 st.markdown(f"""
 <style>
     h1, h2, h3 {{ color: {CORES['verde_escuro']} !important; }}
@@ -103,6 +102,44 @@ st.markdown(f"""
     .stButton button:hover {{ background-color: {CORES['roxo']}; }}
     .stLinkButton button {{ background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']}); color: white; font-size: 18px; padding: 15px; border-radius: 10px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }}
     .footer {{ color: {CORES['cinza_escuro']}; font-size: 12px; text-align: center; padding: 20px; border-top: 1px solid {CORES['cinza_claro']}; }}
+    
+    /* Efeito Neon para TODOS os cards */
+    .neon-card {{
+        transition: all 0.3s ease-in-out;
+        cursor: pointer;
+    }}
+    
+    .neon-card:hover {{
+        transform: translateY(-5px);
+    }}
+    
+    .neon-card-turquesa:hover {{
+        box-shadow: 0 0 15px rgba(0, 174, 157, 0.8), 0 0 30px rgba(0, 174, 157, 0.4);
+    }}
+    
+    .neon-card-roxo:hover {{
+        box-shadow: 0 0 15px rgba(73, 71, 157, 0.8), 0 0 30px rgba(73, 71, 157, 0.4);
+    }}
+    
+    .neon-card-verde:hover {{
+        box-shadow: 0 0 15px rgba(0, 54, 65, 0.8), 0 0 30px rgba(0, 54, 65, 0.4);
+    }}
+    
+    .neon-card-laranja:hover {{
+        box-shadow: 0 0 15px rgba(255, 107, 53, 0.8), 0 0 30px rgba(255, 107, 53, 0.4);
+    }}
+    
+    .neon-card-claro:hover {{
+        box-shadow: 0 0 15px rgba(201, 210, 0, 0.8), 0 0 30px rgba(201, 210, 0, 0.4);
+    }}
+    
+    .neon-card-cinza:hover {{
+        box-shadow: 0 0 15px rgba(102, 102, 102, 0.8), 0 0 30px rgba(102, 102, 102, 0.4);
+    }}
+    
+    .neon-card-azul:hover {{
+        box-shadow: 0 0 15px rgba(30, 136, 229, 0.8), 0 0 30px rgba(30, 136, 229, 0.4);
+    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -110,7 +147,7 @@ st.markdown(f"""
 st.markdown(f"""
 <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {CORES['turquesa']}20, {CORES['roxo']}20); border-radius: 15px; margin-bottom: 20px;'>
     <h1 style='color: {CORES['verde_escuro']}; margin-bottom: 0;'>📊 Dashboard Cocred - Campanhas</h1>
-    <p style='color: {CORES['texto_escuro']};'>Análise consolidada de campanhas</p>
+    <p style='color: {CORES['texto_escuro']};'>Análise consolidada de campanhas | Mídia ON, OFF e Orgânica</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -203,171 +240,713 @@ def exportar_excel_completo(df):
     
     return output
 
-def criar_cards_metricas(df, categoria_nome):
-    """Cria os cards de métricas para uma categoria específica"""
+# ========== FUNÇÃO: CARDS CONSOLIDADOS ON/OFF ==========
+def criar_cards_consolidados(df):
+    """Cria cards de KPIs consolidados no formato Mídia ON e OFF"""
     
-    # Obter coluna de impacto correta
-    col_impacto = get_impacto_column(df, categoria_nome)
+    # Identificar colunas
+    col_impacto_pago = 'Impacto Pago' if 'Impacto Pago' in df.columns else None
+    col_impacto_org = None
+    for col in df.columns:
+        if 'impacto' in col.lower() and 'orgânico' in col.lower():
+            col_impacto_org = col
+            break
+    if not col_impacto_org:
+        col_impacto_org = 'Impacto Ogânico (impressões e entrega de email)' if 'Impacto Ogânico (impressões e entrega de email)' in df.columns else None
+    
     col_invest = 'Investimento' if 'Investimento' in df.columns else None
     col_leads = 'Leads' if 'Leads' in df.columns else None
     
-    # Calcular métricas básicas (com TODOS os registros)
-    impacto = df[col_impacto].sum() if col_impacto and not df.empty else 0
-    investimento = df[col_invest].sum() if col_invest and not df.empty else 0
-    leads = df[col_leads].sum() if col_leads and not df.empty else 0
+    # Separar dados por Mídia ON e OFF
+    midia_on_meios = ['Patrocinado']
+    midia_off_meios = ['TV', 'Rádio', 'OOH', 'Produção']
     
-    # Tratar valores nulos
-    impacto = impacto if not pd.isna(impacto) else 0
-    investimento = investimento if not pd.isna(investimento) else 0
-    leads = leads if not pd.isna(leads) else 0
+    df_on = df[df['Meio'].isin(midia_on_meios)] if 'Meio' in df.columns else pd.DataFrame()
+    df_off = df[df['Meio'].isin(midia_off_meios)] if 'Meio' in df.columns else pd.DataFrame()
     
-    cpm = (investimento / impacto * 1000) if impacto > 0 else 0
-    cpl = (investimento / leads) if leads > 0 else 0
+    # Impacto Total (ON + OFF + Orgânico)
+    impacto_on = df_on[col_impacto_pago].sum() if col_impacto_pago and not df_on.empty else 0
+    impacto_off = df_off[col_impacto_pago].sum() if col_impacto_pago and not df_off.empty else 0
+    impacto_org = df[col_impacto_org].sum() if col_impacto_org and not df.empty else 0
     
-    # ========== VALORES MANUAIS (BASEADOS NOS SEUS DADOS REAIS) ==========
-    # Como o cálculo automático está com problemas, usamos os valores corretos
-    taxa_abertura_media = None
-    taxa_clique_media = None
-    impacto_taxas = 1052  # Total de impactos dos emails RD Station
-    qtd_registros = 12     # Total de registros de email
+    impacto_total = impacto_on + impacto_off + impacto_org
+    impacto_total = impacto_total if not pd.isna(impacto_total) else 0
     
-    if categoria_nome == 'Orgânico':
-        # Verificar se existem dados de taxa na planilha
-        if 'Taxa de Abertura' in df.columns:
-            # Valores corretos baseados nos seus dados
-            taxa_abertura_media = 8.8
-            taxa_clique_media = 2.7
-            
-            # # DEBUG
-            # st.sidebar.write(f"📊 Registros considerados: {qtd_registros}")
-            # st.sidebar.write(f"📊 Impacto total: {impacto_taxas:,.0f}")
-            # st.sidebar.write(f"📊 Taxa Abertura: {taxa_abertura_media:.1f}%")
-            # st.sidebar.write(f"📊 Taxa Clique: {taxa_clique_media:.1f}%")
+    # Investimento Mídia OFF
+    invest_off = df_off[col_invest].sum() if col_invest and not df_off.empty else 0
+    invest_off = invest_off if not pd.isna(invest_off) else 0
     
-    # Primeira linha: 5 cards principais
-    col1, col2, col3, col4, col5 = st.columns(5)
+    # Investimento Mídia ON
+    invest_on = df_on[col_invest].sum() if col_invest and not df_on.empty else 0
+    invest_on = invest_on if not pd.isna(invest_on) else 0
+    
+    # CPM Mídia ON
+    cpm_on = (invest_on / impacto_on * 1000) if impacto_on > 0 else 0
+    
+    # CPM Mídia OFF
+    cpm_off = (invest_off / impacto_off * 1000) if impacto_off > 0 else 0
+    
+    # CPM TOTAL (ON + OFF unificado)
+    investimento_total_on_off = invest_on + invest_off
+    impacto_total_on_off = impacto_on + impacto_off
+    cpm_total = (investimento_total_on_off / impacto_total_on_off * 1000) if impacto_total_on_off > 0 else 0
+    
+    # Leads Total
+    leads_total = df[col_leads].sum() if col_leads and not df.empty else 0
+    leads_total = leads_total if not pd.isna(leads_total) else 0
+    
+    # CPL Médio (consolidado)
+    cpl_medio = (investimento_total_on_off / leads_total) if leads_total > 0 else 0
+    
+    # Custo de Produção
+    df_producao = df[df['Meio'] == 'Produção'] if 'Meio' in df.columns else pd.DataFrame()
+    custo_producao = df_producao[col_invest].sum() if col_invest and not df_producao.empty else 0
+    custo_producao = custo_producao if not pd.isna(custo_producao) else 0
+    
+    # ========== LINHA 1: 6 CARDS PRINCIPAIS ==========
+    st.markdown("#### 📊 MÉTRICAS CONSOLIDADAS")
+    
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
         st.markdown(f"""
-        <div style='background-color: {CORES['turquesa']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-            <p style='color: white; margin: 0; font-size: 14px;'>IMPACTO</p>
-            <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>{impacto:,.0f}</p>
+        <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📊 IMPACTO TOTAL</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>{impacto_total:,.0f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>ON + OFF + Orgânico</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
-        if categoria_nome != 'Orgânico':
-            st.markdown(f"""
-            <div style='background-color: {CORES['roxo']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                <p style='color: white; margin: 0; font-size: 14px;'>INVESTIMENTO</p>
-                <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>R$ {investimento:,.2f}</p>
-            </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown(f"""
-            <div style='background-color: {CORES['roxo']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                <p style='color: white; margin: 0; font-size: 14px;'>INVESTIMENTO</p>
-                <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>R$ 0,00</p>
-                <p style='color: white; margin: 0; font-size: 10px;'>Mídia Orgânica</p>
-            </div>
-            """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 INVEST. MÍDIA OFF</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_off:,.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>TV, Rádio, OOH, Produção</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
-        <div style='background-color: {CORES['verde_escuro']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-            <p style='color: white; margin: 0; font-size: 14px;'>CPM</p>
-            <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>R$ {cpm:.2f}</p>
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 INVEST. MÍDIA ON</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_on:,.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Patrocinado (Digital)</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
         st.markdown(f"""
-        <div style='background-color: {CORES['verde_claro']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-            <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 14px; font-weight: bold;'>LEADS</p>
-            <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 28px; font-weight: bold;'>{leads:,.0f}</p>
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}90; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 CPM MÍDIA ON</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_on:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col5:
-        if categoria_nome != 'Orgânico':
+        st.markdown(f"""
+        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}90; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 CPM MÍDIA OFF</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_off:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col6:
+        st.markdown(f"""
+        <div class='neon-card neon-card-azul' style='background-color: {CORES['azul']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📈 CPM TOTAL</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_total:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>ON + OFF Unificado</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # ========== LINHA 2: 3 CARDS CENTRALIZADOS ==========
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    col_center1, col_center2, col_center3 = st.columns([0.5, 3, 0.5])
+    
+    with col_center2:
+        col_a, col_b, col_c = st.columns(3)
+        
+        with col_a:
             st.markdown(f"""
-            <div style='background-color: {CORES['cinza_escuro']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                <p style='color: white; margin: 0; font-size: 14px;'>CPL</p>
-                <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>R$ {cpl:.2f}</p>
+            <div class='neon-card neon-card-verde' style='background-color: {CORES['verde_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 110px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>🎯 LEADS</p>
+                <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>{leads_total:,.0f}</p>
+                <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Total de Leads</p>
             </div>
             """, unsafe_allow_html=True)
-        else:
+        
+        with col_b:
             st.markdown(f"""
-            <div style='background-color: {CORES['cinza_escuro']}; padding: 20px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);'>
-                <p style='color: white; margin: 0; font-size: 14px;'>CPL</p>
-                <p style='color: white; margin: 0; font-size: 28px; font-weight: bold;'>R$ 0,00</p>
-                <p style='color: white; margin: 0; font-size: 10px;'>Mídia Orgânica</p>
+            <div class='neon-card neon-card-cinza' style='background-color: {CORES['cinza_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 110px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💵 CPL MÉDIO</p>
+                <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpl_medio:.2f}</p>
+                <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Lead</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col_c:
+            st.markdown(f"""
+            <div class='neon-card neon-card-claro' style='background-color: {CORES['verde_claro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 110px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 11px; opacity: 0.9; font-weight: bold;'>🎬 CUSTO DE PRODUÇÃO</p>
+                <p style='color: {CORES['verde_escuro']}; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {custo_producao:,.2f}</p>
+                <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 9px; opacity: 0.7;'>Meio = Produção</p>
             </div>
             """, unsafe_allow_html=True)
     
-    # ========== SEGUNDA LINHA: CARDS DE TAXAS ==========
-    if categoria_nome == 'Orgânico':
-        if taxa_abertura_media is not None and taxa_clique_media is not None:
-            st.markdown("---")
+    # ========== LINHA 3: TAXAS DE EMAIL (quando houver dados) ==========
+    if 'Taxa de Abertura' in df.columns and 'Taxa de Clique' in df.columns:
+        df_email = df[df['Taxa de Abertura'].notna() & df['Taxa de Clique'].notna()]
+        
+        if not df_email.empty:
+            # Média simples das taxas (valores já em percentual)
+            taxa_abertura_media = df_email['Taxa de Abertura'].mean()*100
+            taxa_clique_media = df_email['Taxa de Clique'].mean()*100
             
+            st.markdown("---")
             st.markdown(f"""
             <div style='background-color: {CORES['cinza_claro']}50; padding: 5px 10px; border-radius: 5px; margin-bottom: 10px;'>
                 <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 11px; text-align: center;'>
-                    📧 Taxas calculadas com base em {qtd_registros} registros de email 
-                    (total de {impacto_taxas:,.0f} impactos)
+                    📧 Taxas de Email Marketing - Média simples com base em {len(df_email)} registros
                 </p>
             </div>
             """, unsafe_allow_html=True)
             
-            col_taxa1, col_taxa2, col_taxa3 = st.columns([1, 1, 2])
+            col_center1, col_center2, col_center3 = st.columns([1.5, 2, 1.5])
             
-            with col_taxa1:
-                st.markdown(f"""
-                <div style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']};'>
-                    <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>📧 TAXA MÉDIA DE ABERTURA</p>
-                    <p style='color: {CORES['turquesa']}; margin: 0; font-size: 24px; font-weight: bold;'>{taxa_abertura_media:.1f}%</p>
-                    <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>Média ponderada por impacto</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col_taxa2:
-                st.markdown(f"""
-                <div style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']};'>
-                    <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>🖱️ TAXA MÉDIA DE CLIQUE</p>
-                    <p style='color: {CORES['roxo']}; margin: 0; font-size: 24px; font-weight: bold;'>{taxa_clique_media:.1f}%</p>
-                    <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>Média ponderada por impacto</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col_taxa3:
-                relacao = (taxa_clique_media / taxa_abertura_media * 100) if taxa_abertura_media > 0 else 0
-                st.markdown(f"""
-                <div style='background-color: {CORES['verde_claro']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['verde_claro']};'>
-                    <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>📊 RELAÇÃO ABERTURA → CLIQUE</p>
-                    <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 20px; font-weight: bold;'>{relacao:.1f}%</p>
-                    <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>Dos que abriram, clicaram</p>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.markdown("---")
-            st.info("📊 Nenhum registro com taxa de abertura e clique encontrado nos filtros selecionados.")
+            with col_center2:
+                col_taxa1, col_taxa2 = st.columns(2)
+                
+                with col_taxa1:
+                    st.markdown(f"""
+                    <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer; height: 110px; display: flex; flex-direction: column; justify-content: center;'>
+                        <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>📧 TAXA MÉDIA DE ABERTURA</p>
+                        <p style='color: {CORES['turquesa']}; margin: 5px 0 0 0; font-size: 24px; font-weight: bold;'>{taxa_abertura_media:.1f}%</p>
+                        <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 9px;'>Média simples</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with col_taxa2:
+                    st.markdown(f"""
+                    <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer; height: 110px; display: flex; flex-direction: column; justify-content: center;'>
+                        <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>🖱️ TAXA MÉDIA DE CLIQUE</p>
+                        <p style='color: {CORES['roxo']}; margin: 5px 0 0 0; font-size: 24px; font-weight: bold;'>{taxa_clique_media:.1f}%</p>
+                        <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 9px;'>Média simples</p>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-# ========== DASHBOARD PRINCIPAL ==========
-def dashboard_metricas(df):
-    """Dashboard com filtros, cards de métricas, descrições e tabela geral"""
+# ========== FUNÇÃO PARA COMPARAR CAMPANHAS (COM FILTROS DE MEIO E VEÍCULO) ==========
+def comparar_campanhas(df):
+    """Função para comparar duas campanhas lado a lado com filtros independentes"""
+    
+    st.markdown("### 📈 COMPARAR CAMPANHAS")
+    st.markdown("Selecione duas campanhas e seus respectivos filtros para comparar.")
+    
+    # Buscar colunas
+    camp_cols = [col for col in df.columns if any(x in col.lower() for x in ['campanha', 'campaign'])]
+    
+    if not camp_cols:
+        st.error("❌ Nenhuma coluna de campanha encontrada na planilha!")
+        return
+    
+    col_campanha = camp_cols[0]
+    campanhas_disponiveis = sorted(df[col_campanha].unique().tolist())
+    
+    ano_col = next((col for col in ['Ano da Campanha', 'Ano', 'ano', 'ANO'] if col in df.columns), None)
+    mes_col = next((col for col in ['Mês da Análise', 'Mês', 'mes', 'MES'] if col in df.columns), None)
+    veic_col = 'Veículo' if 'Veículo' in df.columns else ('Veiculo' if 'Veiculo' in df.columns else None)
+    
+    # Opções de filtros
+    if ano_col:
+        anos_disponiveis = ['Todos'] + sorted(df[ano_col].astype(str).unique().tolist())
+    else:
+        anos_disponiveis = ['Todos']
+    
+    if mes_col:
+        meses_disponiveis = ['Todos'] + sorted(df[mes_col].astype(str).unique().tolist())
+    else:
+        meses_disponiveis = ['Todos']
+    
+    if 'Meio' in df.columns:
+        meios_disponiveis = ['Todos'] + sorted(df['Meio'].unique().tolist())
+    else:
+        meios_disponiveis = ['Todos']
+    
+    if veic_col:
+        veiculos_disponiveis = ['Todos'] + sorted(df[veic_col].unique().tolist())
+    else:
+        veiculos_disponiveis = ['Todos']
+    
+    # ========== SELEÇÃO DAS CAMPANHAS COM FILTROS INDEPENDENTES ==========
+    st.markdown("#### 🎯 Seleção de Campanhas e Filtros")
+    
+    col_c1, col_c2 = st.columns(2)
+    
+    with col_c1:
+        st.markdown("##### 📌 CAMPANHA 1")
+        campanha1 = st.selectbox("Campanha", campanhas_disponiveis, key="camp1")
+        
+        col_f1a, col_f1b = st.columns(2)
+        with col_f1a:
+            if ano_col:
+                ano1 = st.selectbox("Ano", anos_disponiveis, key="ano1")
+            else:
+                ano1 = 'Todos'
+        with col_f1b:
+            if mes_col:
+                mes1 = st.selectbox("Mês", meses_disponiveis, key="mes1")
+            else:
+                mes1 = 'Todos'
+        
+        col_f1c, col_f1d = st.columns(2)
+        with col_f1c:
+            meio1 = st.selectbox("Meio", meios_disponiveis, key="meio1")
+        with col_f1d:
+            veiculo1 = st.selectbox("Veículo", veiculos_disponiveis, key="veiculo1")
+    
+    with col_c2:
+        st.markdown("##### 📌 CAMPANHA 2")
+        campanha2 = st.selectbox("Campanha", campanhas_disponiveis, key="camp2")
+        
+        col_f2a, col_f2b = st.columns(2)
+        with col_f2a:
+            if ano_col:
+                ano2 = st.selectbox("Ano", anos_disponiveis, key="ano2")
+            else:
+                ano2 = 'Todos'
+        with col_f2b:
+            if mes_col:
+                mes2 = st.selectbox("Mês", meses_disponiveis, key="mes2")
+            else:
+                mes2 = 'Todos'
+        
+        col_f2c, col_f2d = st.columns(2)
+        with col_f2c:
+            meio2 = st.selectbox("Meio", meios_disponiveis, key="meio2")
+        with col_f2d:
+            veiculo2 = st.selectbox("Veículo", veiculos_disponiveis, key="veiculo2")
+    
+    # Verificar se selecionou a mesma campanha com os mesmos filtros
+    if campanha1 == campanha2 and ano1 == ano2 and mes1 == mes2 and meio1 == meio2 and veiculo1 == veiculo2:
+        st.warning("⚠️ Selecione campanhas ou filtros diferentes para comparar!")
+        return
+    
+    # ========== FILTRAR DADOS DA CAMPANHA 1 ==========
+    df_camp1 = df[df[col_campanha] == campanha1].copy()
+    
+    if ano_col and ano1 != 'Todos':
+        df_camp1 = df_camp1[df_camp1[ano_col].astype(str) == ano1]
+    
+    if mes_col and mes1 != 'Todos':
+        df_camp1 = df_camp1[df_camp1[mes_col].astype(str) == mes1]
+    
+    if 'Meio' in df.columns and meio1 != 'Todos':
+        df_camp1 = df_camp1[df_camp1['Meio'] == meio1]
+    
+    if veic_col and veiculo1 != 'Todos':
+        df_camp1 = df_camp1[df_camp1[veic_col] == veiculo1]
+    
+    # ========== FILTRAR DADOS DA CAMPANHA 2 ==========
+    df_camp2 = df[df[col_campanha] == campanha2].copy()
+    
+    if ano_col and ano2 != 'Todos':
+        df_camp2 = df_camp2[df_camp2[ano_col].astype(str) == ano2]
+    
+    if mes_col and mes2 != 'Todos':
+        df_camp2 = df_camp2[df_camp2[mes_col].astype(str) == mes2]
+    
+    if 'Meio' in df.columns and meio2 != 'Todos':
+        df_camp2 = df_camp2[df_camp2['Meio'] == meio2]
+    
+    if veic_col and veiculo2 != 'Todos':
+        df_camp2 = df_camp2[df_camp2[veic_col] == veiculo2]
+    
+    # Buscar colunas de métricas
+    col_impacto_pago = 'Impacto Pago' if 'Impacto Pago' in df.columns else None
+    col_invest = 'Investimento' if 'Investimento' in df.columns else None
+    col_leads = 'Leads' if 'Leads' in df.columns else None
+    
+    # Calcular métricas para Campanha 1
+    impacto1 = df_camp1[col_impacto_pago].sum() if col_impacto_pago and not df_camp1.empty else 0
+    invest1 = df_camp1[col_invest].sum() if col_invest and not df_camp1.empty else 0
+    leads1 = df_camp1[col_leads].sum() if col_leads and not df_camp1.empty else 0
+    cpm1 = (invest1 / impacto1 * 1000) if impacto1 > 0 else 0
+    cpl1 = (invest1 / leads1) if leads1 > 0 else 0
+    
+    # Calcular métricas para Campanha 2
+    impacto2 = df_camp2[col_impacto_pago].sum() if col_impacto_pago and not df_camp2.empty else 0
+    invest2 = df_camp2[col_invest].sum() if col_invest and not df_camp2.empty else 0
+    leads2 = df_camp2[col_leads].sum() if col_leads and not df_camp2.empty else 0
+    cpm2 = (invest2 / impacto2 * 1000) if impacto2 > 0 else 0
+    cpl2 = (invest2 / leads2) if leads2 > 0 else 0
+    
+    # ========== MONTAR DESCRIÇÃO DOS PERÍODOS ==========
+    st.markdown("---")
+    col_info1, col_info2 = st.columns(2)
+    
+    with col_info1:
+        periodo1 = f"{campanha1}"
+        if ano1 != 'Todos':
+            periodo1 += f" | {ano1}"
+        if mes1 != 'Todos':
+            periodo1 += f" | {mes1}"
+        if meio1 != 'Todos':
+            periodo1 += f" | {meio1}"
+        if veiculo1 != 'Todos':
+            periodo1 += f" | {veiculo1}"
+        st.caption(f"📊 **Campanha 1:** {periodo1}")
+    
+    with col_info2:
+        periodo2 = f"{campanha2}"
+        if ano2 != 'Todos':
+            periodo2 += f" | {ano2}"
+        if mes2 != 'Todos':
+            periodo2 += f" | {mes2}"
+        if meio2 != 'Todos':
+            periodo2 += f" | {meio2}"
+        if veiculo2 != 'Todos':
+            periodo2 += f" | {veiculo2}"
+        st.caption(f"📊 **Campanha 2:** {periodo2}")
+    
+    # ========== CARDS DE COMPARAÇÃO COM EFEITO NEON ==========
+    st.markdown("### 📊 COMPARAÇÃO DE MÉTRICAS")
+    
+    # Impacto
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        st.markdown(f"""
+        <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>IMPACTO</p>
+            <p style='color: {CORES['turquesa']}; margin: 0; font-size: 28px; font-weight: bold;'>{impacto1:,.0f}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha1}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>IMPACTO</p>
+            <p style='color: {CORES['roxo']}; margin: 0; font-size: 28px; font-weight: bold;'>{impacto2:,.0f}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha2}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        variacao_impacto = ((impacto1 - impacto2) / impacto2 * 100) if impacto2 > 0 else 0
+        cor_variacao = CORES['sucesso'] if variacao_impacto > 0 else CORES['erro']
+        sinal = "+" if variacao_impacto > 0 else ""
+        st.markdown(f"""
+        <div class='neon-card' style='background-color: {CORES['cinza_claro']}50; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>VARIAÇÃO</p>
+            <p style='color: {cor_variacao}; margin: 0; font-size: 24px; font-weight: bold;'>{sinal}{variacao_impacto:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Investimento
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        st.markdown(f"""
+        <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>INVESTIMENTO</p>
+            <p style='color: {CORES['turquesa']}; margin: 0; font-size: 28px; font-weight: bold;'>R$ {invest1:,.2f}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha1}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>INVESTIMENTO</p>
+            <p style='color: {CORES['roxo']}; margin: 0; font-size: 28px; font-weight: bold;'>R$ {invest2:,.2f}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha2}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        variacao_invest = ((invest1 - invest2) / invest2 * 100) if invest2 > 0 else 0
+        cor_variacao = CORES['sucesso'] if variacao_invest > 0 else CORES['erro']
+        sinal = "+" if variacao_invest > 0 else ""
+        st.markdown(f"""
+        <div class='neon-card' style='background-color: {CORES['cinza_claro']}50; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>VARIAÇÃO</p>
+            <p style='color: {cor_variacao}; margin: 0; font-size: 24px; font-weight: bold;'>{sinal}{variacao_invest:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Leads
+    col1, col2, col3 = st.columns([2, 2, 1])
+    with col1:
+        st.markdown(f"""
+        <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>LEADS</p>
+            <p style='color: {CORES['turquesa']}; margin: 0; font-size: 28px; font-weight: bold;'>{leads1:,.0f}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha1}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown(f"""
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>LEADS</p>
+            <p style='color: {CORES['roxo']}; margin: 0; font-size: 28px; font-weight: bold;'>{leads2:,.0f}</p>
+            <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 10px;'>{campanha2}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        variacao_leads = ((leads1 - leads2) / leads2 * 100) if leads2 > 0 else 0
+        cor_variacao = CORES['sucesso'] if variacao_leads > 0 else CORES['erro']
+        sinal = "+" if variacao_leads > 0 else ""
+        st.markdown(f"""
+        <div class='neon-card' style='background-color: {CORES['cinza_claro']}50; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>VARIAÇÃO</p>
+            <p style='color: {cor_variacao}; margin: 0; font-size: 24px; font-weight: bold;'>{sinal}{variacao_leads:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # CPM e CPL lado a lado
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 📈 CPM (Custo por Mil Impactos)")
+        col_cpm1, col_cpm2 = st.columns(2)
+        with col_cpm1:
+            st.markdown(f"""
+            <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha1}</p>
+                <p style='color: {CORES['turquesa']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpm1:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_cpm2:
+            st.markdown(f"""
+            <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha2}</p>
+                <p style='color: {CORES['roxo']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpm2:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("#### 💵 CPL (Custo por Lead)")
+        col_cpl1, col_cpl2 = st.columns(2)
+        with col_cpl1:
+            st.markdown(f"""
+            <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha1}</p>
+                <p style='color: {CORES['turquesa']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpl1:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col_cpl2:
+            st.markdown(f"""
+            <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 15px; border-radius: 10px; text-align: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 11px;'>{campanha2}</p>
+                <p style='color: {CORES['roxo']}; margin: 0; font-size: 24px; font-weight: bold;'>R$ {cpl2:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # ========== GRÁFICOS EM EXPANDERS ==========
+    st.markdown("### 📊 GRÁFICOS COMPARATIVOS")
+    st.markdown("*Clique em cada métrica para expandir o gráfico*")
+    
+    # Expander 1: Impacto
+    with st.expander("📊 IMPACTO", expanded=False):
+        fig_impacto = go.Figure()
+        
+        fig_impacto.add_trace(go.Bar(
+            name=campanha1,
+            x=['Impacto'],
+            y=[impacto1],
+            marker_color=CORES['turquesa'],
+            text=[f'{impacto1:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_impacto.add_trace(go.Bar(
+            name=campanha2,
+            x=['Impacto'],
+            y=[impacto2],
+            marker_color=CORES['roxo'],
+            text=[f'{impacto2:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_impacto.update_layout(
+            title="Comparação de Impacto",
+            barmode='group',
+            yaxis_title="Impactos",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_impacto, use_container_width=True)
+    
+    # Expander 2: Investimento
+    with st.expander("💰 INVESTIMENTO", expanded=False):
+        fig_invest = go.Figure()
+        
+        fig_invest.add_trace(go.Bar(
+            name=campanha1,
+            x=['Investimento'],
+            y=[invest1],
+            marker_color=CORES['turquesa'],
+            text=[f'R$ {invest1:,.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_invest.add_trace(go.Bar(
+            name=campanha2,
+            x=['Investimento'],
+            y=[invest2],
+            marker_color=CORES['roxo'],
+            text=[f'R$ {invest2:,.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_invest.update_layout(
+            title="Comparação de Investimento",
+            barmode='group',
+            yaxis_title="Investimento (R$)",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_invest, use_container_width=True)
+    
+    # Expander 3: Leads
+    with st.expander("🎯 LEADS", expanded=False):
+        fig_leads = go.Figure()
+        
+        fig_leads.add_trace(go.Bar(
+            name=campanha1,
+            x=['Leads'],
+            y=[leads1],
+            marker_color=CORES['turquesa'],
+            text=[f'{leads1:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_leads.add_trace(go.Bar(
+            name=campanha2,
+            x=['Leads'],
+            y=[leads2],
+            marker_color=CORES['roxo'],
+            text=[f'{leads2:,.0f}'],
+            textposition='outside'
+        ))
+        
+        fig_leads.update_layout(
+            title="Comparação de Leads",
+            barmode='group',
+            yaxis_title="Leads",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_leads, use_container_width=True)
+    
+    # Expander 4: CPM
+    with st.expander("📈 CPM (CUSTO POR MIL IMPACTOS)", expanded=False):
+        fig_cpm = go.Figure()
+        
+        fig_cpm.add_trace(go.Bar(
+            name=campanha1,
+            x=['CPM'],
+            y=[cpm1],
+            marker_color=CORES['turquesa'],
+            text=[f'R$ {cpm1:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpm.add_trace(go.Bar(
+            name=campanha2,
+            x=['CPM'],
+            y=[cpm2],
+            marker_color=CORES['roxo'],
+            text=[f'R$ {cpm2:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpm.update_layout(
+            title="Comparação de CPM",
+            barmode='group',
+            yaxis_title="CPM (R$)",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_cpm, use_container_width=True)
+    
+    # Expander 5: CPL
+    with st.expander("💵 CPL (CUSTO POR LEAD)", expanded=False):
+        fig_cpl = go.Figure()
+        
+        fig_cpl.add_trace(go.Bar(
+            name=campanha1,
+            x=['CPL'],
+            y=[cpl1],
+            marker_color=CORES['turquesa'],
+            text=[f'R$ {cpl1:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpl.add_trace(go.Bar(
+            name=campanha2,
+            x=['CPL'],
+            y=[cpl2],
+            marker_color=CORES['roxo'],
+            text=[f'R$ {cpl2:.2f}'],
+            textposition='outside'
+        ))
+        
+        fig_cpl.update_layout(
+            title="Comparação de CPL",
+            barmode='group',
+            yaxis_title="CPL (R$)",
+            plot_bgcolor='white',
+            height=300,
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_cpl, use_container_width=True)
+    
+    # Tabela comparativa
+    st.markdown("---")
+    st.markdown("### 📋 TABELA COMPARATIVA")
+    
+    tabela_comparativa = pd.DataFrame({
+        'Métrica': ['Impacto', 'Investimento (R$)', 'Leads', 'CPM (R$)', 'CPL (R$)'],
+        periodo1: [f'{impacto1:,.0f}', f'R$ {invest1:,.2f}', f'{leads1:,.0f}', f'R$ {cpm1:.2f}', f'R$ {cpl1:.2f}'],
+        periodo2: [f'{impacto2:,.0f}', f'R$ {invest2:,.2f}', f'{leads2:,.0f}', f'R$ {cpm2:.2f}', f'R$ {cpl2:.2f}']
+    })
+    
+    st.dataframe(tabela_comparativa, use_container_width=True, hide_index=True)
+
+# ========== ABA: VISÃO GERAL (COM CARDS CONSOLIDADOS ON/OFF) ==========
+def dashboard_visao_geral(df):
+    """Dashboard com filtros, cards consolidados ON/OFF, descrições e tabela geral"""
     
     st.markdown("### 🔍 FILTROS")
-      
     
-    st.sidebar.markdown("---")
-    # Buscar colunas disponíveis
     possiveis_ano = ['Ano da Campanha', 'Ano', 'ano', 'ANO']
     possiveis_mes = ['Mês da Análise', 'Mês', 'mes', 'MES']
     
     col_ano = next((nome for nome in possiveis_ano if nome in df.columns), None)
     col_mes = next((nome for nome in possiveis_mes if nome in df.columns), None)
     
-    # Filtros em 6 colunas
     col_f1, col_f2, col_f3, col_f4, col_f5, col_f6 = st.columns(6)
     
     with col_f1:
@@ -408,7 +987,7 @@ def dashboard_metricas(df):
             veic_sel = st.selectbox("🚗 Veículo", ['Todos'], key="filtro_veiculo")
     
     with col_f6:
-        categorias_opcoes = ['Todos', 'Patrocinado', 'Orgânico', 'Tradicional']
+        categorias_opcoes = ['Todos', 'Mídia ON', 'Mídia OFF', 'Orgânico']
         cat_sel = st.selectbox("🏷️ Categoria", categorias_opcoes, key="filtro_categoria")
     
     # Aplicar filtros
@@ -429,66 +1008,23 @@ def dashboard_metricas(df):
     if veic_col and veic_sel != 'Todos':
         df_filtrado = df_filtrado[df_filtrado[veic_col] == veic_sel]
     
-    # Aplicar filtro de categoria
     if cat_sel != 'Todos':
-        if cat_sel == 'Patrocinado':
+        if cat_sel == 'Mídia ON':
             meios_filtro = ['Patrocinado']
         elif cat_sel == 'Orgânico':
             meios_filtro = ['Orgânico']
-        else:  # Tradicional
-            meios_filtro = ['TV', 'Rádio', 'OOH']
+        elif cat_sel == 'Mídia OFF':
+            meios_filtro = ['TV', 'Rádio', 'OOH', 'Produção']
         
         df_filtrado = df_filtrado[df_filtrado['Meio'].isin(meios_filtro)]
     
     st.markdown("---")
     
-    # ========== BIG NUMBERS ==========
-    if cat_sel == 'Todos':
-        # Mostra as 3 categorias separadas
-        st.markdown("### 📈 MÍDIA PATROCINADA")
-        df_patro = df_filtrado[df_filtrado['Meio'] == 'Patrocinado']
-        if not df_patro.empty:
-            criar_cards_metricas(df_patro, 'Patrocinado')
-        else:
-            st.info("Nenhum dado encontrado para Mídia Patrocinada")
-        
-        st.markdown("---")
-        st.markdown("### 🌱 MÍDIA ORGÂNICA")
-        df_org = df_filtrado[df_filtrado['Meio'] == 'Orgânico']
-        if not df_org.empty:
-            criar_cards_metricas(df_org, 'Orgânico')
-        else:
-            st.info("Nenhum dado encontrado para Mídia Orgânica")
-        
-        st.markdown("---")
-        st.markdown("### 📺 MÍDIA TRADICIONAL")
-        df_trad = df_filtrado[df_filtrado['Meio'].isin(['TV', 'Rádio', 'OOH'])]
-        if not df_trad.empty:
-            criar_cards_metricas(df_trad, 'Tradicional')
-        else:
-            st.info("Nenhum dado encontrado para Mídia Tradicional")
+    # ========== CARDS CONSOLIDADOS ON/OFF ==========
+    if not df_filtrado.empty:
+        criar_cards_consolidados(df_filtrado)
     else:
-        # Mostra apenas a categoria selecionada
-        if cat_sel == 'Patrocinado':
-            icone = "📈"
-            cor_titulo = CORES['turquesa']
-        elif cat_sel == 'Orgânico':
-            icone = "🌱"
-            cor_titulo = CORES['verde_escuro']
-        else:
-            icone = "📺"
-            cor_titulo = CORES['roxo']
-        
-        st.markdown(f"""
-        <div style='background: linear-gradient(135deg, {cor_titulo}10, {cor_titulo}30); padding: 15px; border-radius: 10px; margin-bottom: 15px;'>
-            <h3 style='color: {cor_titulo}; margin: 0;'>{icone} MÍDIA {cat_sel.upper()}</h3>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        if not df_filtrado.empty:
-            criar_cards_metricas(df_filtrado, cat_sel)
-        else:
-            st.warning(f"Nenhum dado encontrado para a categoria {cat_sel} com os filtros selecionados.")
+        st.warning("Nenhum dado encontrado com os filtros selecionados.")
     
     st.markdown("---")
     
@@ -498,23 +1034,23 @@ def dashboard_metricas(df):
     col_desc1, col_desc2, col_desc3 = st.columns(3)
     
     with col_desc1:
-        st.markdown("""
+        st.markdown(f"""
         <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: #00AE9D; margin: 0;'>IMPACTO</h5>
+            <h5 style='color: {CORES['turquesa']}; margin: 0;'>📊 IMPACTO TOTAL</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
-                Número total de impressões ou visualizações da campanha.<br>
-                <strong>Quanto maior, melhor o alcance.</strong>
+                Soma de todos os impactos (ON + OFF + Orgânico).<br>
+                <strong>Quanto maior, melhor o alcance total.</strong>
             </p>
         </div>
         """, unsafe_allow_html=True)
     
     with col_desc2:
-        st.markdown("""
+        st.markdown(f"""
         <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: #49479D; margin: 0;'>INVESTIMENTO</h5>
+            <h5 style='color: {CORES['laranja']}; margin: 0;'>📺 MÍDIA OFF</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
-                Valor total gasto na campanha.<br>
-                <strong>Base para cálculo das demais métricas.</strong>
+                <strong>Investimento:</strong> TV, Rádio, OOH e Produção.<br>
+                <strong>CPM OFF:</strong> Custo por mil impactos da mídia OFF.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -522,9 +1058,10 @@ def dashboard_metricas(df):
     with col_desc3:
         st.markdown(f"""
         <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
-            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>LEADS</h5>
+            <h5 style='color: {CORES['roxo']}; margin: 0;'>💻 MÍDIA ON</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
-                Número total de leads gerados.
+                <strong>Investimento:</strong> Patrocinado (Digital).<br>
+                <strong>CPM ON:</strong> Custo por mil impactos da mídia ON.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -596,7 +1133,7 @@ with st.sidebar:
     st.markdown(f"""
     <div style='text-align: center; padding: 20px; background: linear-gradient(135deg, {CORES['turquesa']}, {CORES['roxo']}); border-radius: 10px; margin-bottom: 20px;'>
         <h2 style='color: white; margin: 0;'>Cocred</h2>
-        <p style='color: white; margin: 0;'>Análise consolidada de campanhas</p>
+        <p style='color: white; margin: 0;'>Análise de Campanhas</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -640,11 +1177,20 @@ with st.sidebar:
             st.session_state.file_metadata = None
             st.rerun()
 
-# ========== ÁREA PRINCIPAL ==========
+# ========== ÁREA PRINCIPAL COM 2 ABAS ==========
 if st.session_state.df is not None:
     df = st.session_state.df
-    dashboard_metricas(df)
+    
+    # Criar 2 abas
+    aba1, aba2 = st.tabs(["📊 VISÃO GERAL", "📈 COMPARAR CAMPANHAS"])
+    
+    with aba1:
+        dashboard_visao_geral(df)
+    
+    with aba2:
+        comparar_campanhas(df)
 else:
+    # Tela inicial
     col1, col2 = st.columns([1, 1])
     
     with col1:
@@ -654,10 +1200,10 @@ else:
             <h3 style='color: {CORES['verde_escuro']};'>Bem-vindo ao Dashboard Cocred</h3>
             <p style='color: gray;'>Clique em 'Carregar Planilha' no menu lateral para começar.</p>
             <div style='margin-top: 20px;'>
-                <span style='background-color: {CORES['turquesa']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Turquesa</span>
-                <span style='background-color: {CORES['verde_claro']}; color: {CORES['verde_escuro']}; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Verde Claro</span>
-                <span style='background-color: {CORES['verde_escuro']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Verde Escuro</span>
-                <span style='background-color: {CORES['roxo']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Roxo</span>
+                <span style='background-color: {CORES['turquesa']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>ON</span>
+                <span style='background-color: {CORES['laranja']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>OFF</span>
+                <span style='background-color: {CORES['azul']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>TOTAL</span>
+                <span style='background-color: {CORES['verde_escuro']}; color: white; padding: 5px 15px; border-radius: 20px; margin: 0 5px;'>Leads</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -680,7 +1226,7 @@ st.markdown(f"""
 <div class='footer'>
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
-    <span style='color: {CORES['roxo']};'>Visão Geral</span> • 
-    <span>v17.0 - Taxas Independentes</span>
+    <span style='color: {CORES['azul']};'>CPM Total</span> • 
+    <span>v23.0 - CPM Total</span>
 </div>
 """, unsafe_allow_html=True)
