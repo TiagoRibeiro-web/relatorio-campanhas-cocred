@@ -39,9 +39,9 @@ CORES = {
 
 # ========== MAPEAMENTO DE CATEGORIAS ==========
 CATEGORIAS_MEIO = {
-    'Digital': ['Patrocinado'],
+    'Digital': ['Patrocinado', 'Portal'],
     'Orgânico': ['Orgânico'],
-    'Tradicional': ['TV', 'Rádio', 'OOH']
+    'Tradicional': ['TV', 'Rádio', 'OOH', 'Revista']
 }
 
 def get_categoria(meio):
@@ -258,8 +258,8 @@ def criar_cards_consolidados(df):
     col_leads = 'Leads' if 'Leads' in df.columns else None
     
     # Separar dados por Mídia ON e OFF
-    midia_on_meios = ['Patrocinado']
-    midia_off_meios = ['TV', 'Rádio', 'OOH', 'Produção']
+    midia_on_meios = ['Patrocinado', 'Portal']
+    midia_off_meios = ['TV', 'Rádio', 'OOH', 'Revista']
     
     df_on = df[df['Meio'].isin(midia_on_meios)] if 'Meio' in df.columns else pd.DataFrame()
     df_off = df[df['Meio'].isin(midia_off_meios)] if 'Meio' in df.columns else pd.DataFrame()
@@ -303,9 +303,10 @@ def criar_cards_consolidados(df):
     custo_producao = df_producao[col_invest].sum() if col_invest and not df_producao.empty else 0
     custo_producao = custo_producao if not pd.isna(custo_producao) else 0
     
-    # ========== LINHA 1: 6 CARDS PRINCIPAIS ==========
+    # ========== MÉTRICAS CONSOLIDADAS ==========
     st.markdown("#### 📊 MÉTRICAS CONSOLIDADAS")
     
+    # ========== LINHA ÚNICA COM 6 CARDS AGRUPADOS ==========
     col1, col2, col3, col4, col5, col6 = st.columns(6)
     
     with col1:
@@ -319,42 +320,6 @@ def criar_cards_consolidados(df):
     
     with col2:
         st.markdown(f"""
-        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 INVEST. MÍDIA OFF</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_off:,.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>TV, Rádio, OOH, Produção</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 INVEST. MÍDIA ON</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_on:,.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Patrocinado (Digital)</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}90; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 CPM MÍDIA ON</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_on:.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col5:
-        st.markdown(f"""
-        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}90; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 CPM MÍDIA OFF</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_off:.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col6:
-        st.markdown(f"""
         <div class='neon-card neon-card-azul' style='background-color: {CORES['azul']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
             <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📈 CPM TOTAL</p>
             <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_total:.2f}</p>
@@ -362,7 +327,43 @@ def criar_cards_consolidados(df):
         </div>
         """, unsafe_allow_html=True)
     
-    # ========== LINHA 2: 3 CARDS CENTRALIZADOS ==========
+    with col3:
+        st.markdown(f"""
+        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 INVEST. MÍDIA OFF</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_off:,.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>TV, Rádio, OOH, Revista</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 CPM MÍDIA OFF</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_off:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col5:
+        st.markdown(f"""
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 INVEST. MÍDIA ON</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_on:,.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Patrocinado, Portal (Digital)</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col6:
+        st.markdown(f"""
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 CPM MÍDIA ON</p>
+            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_on:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # ========== LINHA 2: LEADS + CPL + PRODUÇÃO (3 cards centralizados) ==========
     st.markdown("<br>", unsafe_allow_html=True)
     
     col_center1, col_center2, col_center3 = st.columns([0.5, 3, 0.5])
@@ -422,22 +423,24 @@ def criar_cards_consolidados(df):
                 
                 with col_taxa1:
                     st.markdown(f"""
-                    <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer; height: 110px; display: flex; flex-direction: column; justify-content: center;'>
+                    <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}20; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['turquesa']}; transition: all 0.3s ease-in-out; cursor: pointer; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
                         <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>📧 TAXA MÉDIA DE ABERTURA</p>
                         <p style='color: {CORES['turquesa']}; margin: 5px 0 0 0; font-size: 24px; font-weight: bold;'>{taxa_abertura_media:.1f}%</p>
                         <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 9px;'>Média simples</p>
+                        <p style='color: {CORES['cinza_escuro']}; margin: 3px 0 0 0; font-size: 9px;'>🎯 Benchmark: 30%</p>
                     </div>
                     """, unsafe_allow_html=True)
                 
                 with col_taxa2:
                     st.markdown(f"""
-                    <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer; height: 110px; display: flex; flex-direction: column; justify-content: center;'>
+                    <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}20; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {CORES['roxo']}; transition: all 0.3s ease-in-out; cursor: pointer; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
                         <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px;'>🖱️ TAXA MÉDIA DE CLIQUE</p>
                         <p style='color: {CORES['roxo']}; margin: 5px 0 0 0; font-size: 24px; font-weight: bold;'>{taxa_clique_media:.1f}%</p>
                         <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 9px;'>Média simples</p>
+                        <p style='color: {CORES['cinza_escuro']}; margin: 3px 0 0 0; font-size: 9px;'>🎯 Benchmark: 2% a 5%</p>
                     </div>
                     """, unsafe_allow_html=True)
-
+                    
 # ========== FUNÇÃO PARA COMPARAR CAMPANHAS (COM FILTROS DE MEIO E VEÍCULO) ==========
 def comparar_campanhas(df):
     """Função para comparar duas campanhas lado a lado com filtros independentes"""
@@ -951,14 +954,26 @@ def dashboard_visao_geral(df):
     
     with col_f1:
         if col_ano:
-            anos = ['Todos'] + sorted(df[col_ano].astype(str).unique().tolist())
+            # Limpar e pegar valores únicos
+            anos = ['Todos'] + sorted(df[col_ano].dropna().astype(str).str.strip().unique().tolist())
             ano_sel = st.selectbox("📅 Ano", anos, key="filtro_ano")
         else:
             ano_sel = st.selectbox("📅 Ano", ['Todos'], key="filtro_ano")
     
     with col_f2:
         if col_mes:
-            meses = ['Todos'] + sorted(df[col_mes].astype(str).unique().tolist())
+            # Limpar, remover nulos e pegar valores únicos
+            meses_limpos = df[col_mes].dropna().astype(str).str.strip().unique().tolist()
+            
+            # Ordenação correta dos meses
+            ordem_meses = {
+                'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4,
+                'Maio': 5, 'Junho': 6, 'Julho': 7, 'Agosto': 8,
+                'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12
+            }
+            
+            meses_ordenados = sorted(meses_limpos, key=lambda x: ordem_meses.get(x, 99))
+            meses = ['Todos'] + meses_ordenados
             mes_sel = st.selectbox("📆 Mês", meses, key="filtro_mes")
         else:
             mes_sel = st.selectbox("📆 Mês", ['Todos'], key="filtro_mes")
@@ -966,14 +981,14 @@ def dashboard_visao_geral(df):
     with col_f3:
         camp_cols = [col for col in df.columns if 'campanha' in col.lower() or 'campaign' in col.lower()]
         if camp_cols:
-            camps = ['Todas'] + df[camp_cols[0]].unique().tolist()
+            camps = ['Todas'] + df[camp_cols[0]].dropna().astype(str).str.strip().unique().tolist()
             camp_sel = st.selectbox("🎯 Campanha", camps, key="filtro_campanha")
         else:
             camp_sel = st.selectbox("🎯 Campanha", ['Todas'], key="filtro_campanha")
     
     with col_f4:
         if 'Meio' in df.columns:
-            meios = ['Todos'] + df['Meio'].unique().tolist()
+            meios = ['Todos'] + df['Meio'].dropna().astype(str).str.strip().unique().tolist()
             meio_sel = st.selectbox("📢 Meio", meios, key="filtro_meio")
         else:
             meio_sel = st.selectbox("📢 Meio", ['Todos'], key="filtro_meio")
@@ -981,7 +996,7 @@ def dashboard_visao_geral(df):
     with col_f5:
         veic_col = 'Veículo' if 'Veículo' in df.columns else ('Veiculo' if 'Veiculo' in df.columns else None)
         if veic_col:
-            veics = ['Todos'] + df[veic_col].unique().tolist()
+            veics = ['Todos'] + df[veic_col].dropna().astype(str).str.strip().unique().tolist()
             veic_sel = st.selectbox("🚗 Veículo", veics, key="filtro_veiculo")
         else:
             veic_sel = st.selectbox("🚗 Veículo", ['Todos'], key="filtro_veiculo")
@@ -994,38 +1009,40 @@ def dashboard_visao_geral(df):
     df_filtrado = df.copy()
     
     if col_ano and ano_sel != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado[col_ano].astype(str) == ano_sel]
+        df_filtrado = df_filtrado[df_filtrado[col_ano].astype(str).str.strip() == ano_sel]
     
     if col_mes and mes_sel != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado[col_mes].astype(str) == mes_sel]
+        df_filtrado = df_filtrado[df_filtrado[col_mes].astype(str).str.strip() == mes_sel]
     
     if camp_cols and camp_sel != 'Todas':
-        df_filtrado = df_filtrado[df_filtrado[camp_cols[0]] == camp_sel]
+        df_filtrado = df_filtrado[df_filtrado[camp_cols[0]].astype(str).str.strip() == camp_sel]
     
     if 'Meio' in df.columns and meio_sel != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado['Meio'] == meio_sel]
+        df_filtrado = df_filtrado[df_filtrado['Meio'].astype(str).str.strip() == meio_sel]
     
     if veic_col and veic_sel != 'Todos':
-        df_filtrado = df_filtrado[df_filtrado[veic_col] == veic_sel]
+        df_filtrado = df_filtrado[df_filtrado[veic_col].astype(str).str.strip() == veic_sel]
     
     if cat_sel != 'Todos':
         if cat_sel == 'Mídia ON':
-            meios_filtro = ['Patrocinado']
+            meios_filtro = ['Patrocinado', 'Portal']
         elif cat_sel == 'Orgânico':
             meios_filtro = ['Orgânico']
         elif cat_sel == 'Mídia OFF':
-            meios_filtro = ['TV', 'Rádio', 'OOH', 'Produção']
+            meios_filtro = ['TV', 'Rádio', 'OOH', 'Revista']
         
         df_filtrado = df_filtrado[df_filtrado['Meio'].isin(meios_filtro)]
     
     st.markdown("---")
     
+    # O resto da função continua igual...
     # ========== CARDS CONSOLIDADOS ON/OFF ==========
     if not df_filtrado.empty:
         criar_cards_consolidados(df_filtrado)
     else:
         st.warning("Nenhum dado encontrado com os filtros selecionados.")
     
+    # ... (mantenha todo o resto do código igual)    
     st.markdown("---")
     
     # ========== DESCRIÇÕES DAS MÉTRICAS ==========
@@ -1049,7 +1066,7 @@ def dashboard_visao_geral(df):
         <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
             <h5 style='color: {CORES['laranja']}; margin: 0;'>📺 MÍDIA OFF</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
-                <strong>Investimento:</strong> TV, Rádio, OOH e Produção.<br>
+                <strong>Investimento:</strong> TV, Rádio, OOH e Revista.<br>
                 <strong>CPM OFF:</strong> Custo por mil impactos da mídia OFF.
             </p>
         </div>
@@ -1060,7 +1077,7 @@ def dashboard_visao_geral(df):
         <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
             <h5 style='color: {CORES['roxo']}; margin: 0;'>💻 MÍDIA ON</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
-                <strong>Investimento:</strong> Patrocinado (Digital).<br>
+                <strong>Investimento:</strong> Patrocinado e Portal (Digital).<br>
                 <strong>CPM ON:</strong> Custo por mil impactos da mídia ON.
             </p>
         </div>
