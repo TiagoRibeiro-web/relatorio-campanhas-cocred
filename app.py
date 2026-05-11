@@ -440,7 +440,7 @@ def criar_cards_consolidados(df):
                         <p style='color: {CORES['cinza_escuro']}; margin: 3px 0 0 0; font-size: 9px;'>🎯 Benchmark: 2% a 5%</p>
                     </div>
                     """, unsafe_allow_html=True)
-                    
+
 # ========== FUNÇÃO PARA COMPARAR CAMPANHAS (COM FILTROS DE MEIO E VEÍCULO) ==========
 def comparar_campanhas(df):
     """Função para comparar duas campanhas lado a lado com filtros independentes"""
@@ -456,7 +456,7 @@ def comparar_campanhas(df):
         return
     
     col_campanha = camp_cols[0]
-    campanhas_disponiveis = sorted(df[col_campanha].unique().tolist())
+    campanhas_disponiveis = sorted(df[col_campanha].dropna().astype(str).unique().tolist())
     
     ano_col = next((col for col in ['Ano da Campanha', 'Ano', 'ano', 'ANO'] if col in df.columns), None)
     mes_col = next((col for col in ['Mês da Análise', 'Mês', 'mes', 'MES'] if col in df.columns), None)
@@ -464,22 +464,22 @@ def comparar_campanhas(df):
     
     # Opções de filtros
     if ano_col:
-        anos_disponiveis = ['Todos'] + sorted(df[ano_col].astype(str).unique().tolist())
+        anos_disponiveis = ['Todos'] + sorted(df[ano_col].dropna().astype(str).unique().tolist())
     else:
         anos_disponiveis = ['Todos']
     
     if mes_col:
-        meses_disponiveis = ['Todos'] + sorted(df[mes_col].astype(str).unique().tolist())
+        meses_disponiveis = ['Todos'] + sorted(df[mes_col].dropna().astype(str).unique().tolist())
     else:
         meses_disponiveis = ['Todos']
     
     if 'Meio' in df.columns:
-        meios_disponiveis = ['Todos'] + sorted(df['Meio'].unique().tolist())
+        meios_disponiveis = ['Todos'] + sorted(df['Meio'].dropna().astype(str).unique().tolist())
     else:
         meios_disponiveis = ['Todos']
     
     if veic_col:
-        veiculos_disponiveis = ['Todos'] + sorted(df[veic_col].unique().tolist())
+        veiculos_disponiveis = ['Todos'] + sorted(df[veic_col].dropna().astype(str).unique().tolist())
     else:
         veiculos_disponiveis = ['Todos']
     
@@ -541,10 +541,10 @@ def comparar_campanhas(df):
     df_camp1 = df[df[col_campanha] == campanha1].copy()
     
     if ano_col and ano1 != 'Todos':
-        df_camp1 = df_camp1[df_camp1[ano_col].astype(str) == ano1]
+        df_camp1 = df_camp1[df_camp1[ano_col].astype(str).str.strip() == ano1]
     
     if mes_col and mes1 != 'Todos':
-        df_camp1 = df_camp1[df_camp1[mes_col].astype(str) == mes1]
+        df_camp1 = df_camp1[df_camp1[mes_col].astype(str).str.strip() == mes1]
     
     if 'Meio' in df.columns and meio1 != 'Todos':
         df_camp1 = df_camp1[df_camp1['Meio'] == meio1]
@@ -556,10 +556,10 @@ def comparar_campanhas(df):
     df_camp2 = df[df[col_campanha] == campanha2].copy()
     
     if ano_col and ano2 != 'Todos':
-        df_camp2 = df_camp2[df_camp2[ano_col].astype(str) == ano2]
+        df_camp2 = df_camp2[df_camp2[ano_col].astype(str).str.strip() == ano2]
     
     if mes_col and mes2 != 'Todos':
-        df_camp2 = df_camp2[df_camp2[mes_col].astype(str) == mes2]
+        df_camp2 = df_camp2[df_camp2[mes_col].astype(str).str.strip() == mes2]
     
     if 'Meio' in df.columns and meio2 != 'Todos':
         df_camp2 = df_camp2[df_camp2['Meio'] == meio2]
@@ -954,7 +954,6 @@ def dashboard_visao_geral(df):
     
     with col_f1:
         if col_ano:
-            # Limpar e pegar valores únicos
             anos = ['Todos'] + sorted(df[col_ano].dropna().astype(str).str.strip().unique().tolist())
             ano_sel = st.selectbox("📅 Ano", anos, key="filtro_ano")
         else:
@@ -1035,14 +1034,12 @@ def dashboard_visao_geral(df):
     
     st.markdown("---")
     
-    # O resto da função continua igual...
     # ========== CARDS CONSOLIDADOS ON/OFF ==========
     if not df_filtrado.empty:
         criar_cards_consolidados(df_filtrado)
     else:
         st.warning("Nenhum dado encontrado com os filtros selecionados.")
     
-    # ... (mantenha todo o resto do código igual)    
     st.markdown("---")
     
     # ========== DESCRIÇÕES DAS MÉTRICAS ==========
@@ -1244,6 +1241,6 @@ st.markdown(f"""
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['azul']};'>CPM Total</span> • 
-    <span>v23.0 - CPM Total</span>
+    <span>v24.0 - Build Corrigida</span>
 </div>
 """, unsafe_allow_html=True)
