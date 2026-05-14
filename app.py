@@ -295,6 +295,13 @@ def criar_cards_consolidados(df):
     leads_total = df[col_leads].sum() if col_leads and not df.empty else 0
     leads_total = leads_total if not pd.isna(leads_total) else 0
     
+    # Leads ON
+    leads_on = df_on[col_leads].sum() if col_leads and not df_on.empty else 0
+    leads_on = leads_on if not pd.isna(leads_on) else 0
+    
+    # CPL ON (Digital)
+    cpl_on = (invest_on / leads_on) if leads_on > 0 else 0
+    
     # CPL Médio (consolidado)
     cpl_medio = (investimento_total_on_off / leads_total) if leads_total > 0 else 0
     
@@ -306,99 +313,113 @@ def criar_cards_consolidados(df):
     # ========== MÉTRICAS CONSOLIDADAS ==========
     st.markdown("#### 📊 MÉTRICAS CONSOLIDADAS")
     
-    # ========== LINHA ÚNICA COM 6 CARDS AGRUPADOS ==========
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    # ========== LINHA 1: 4 CARDS PRINCIPAIS ==========
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
-        <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📊 IMPACTO TOTAL</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>{impacto_total:,.0f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>ON + OFF + Orgânico</p>
+        <div class='neon-card neon-card-turquesa' style='background-color: {CORES['turquesa']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>📊 IMPACTO TOTAL</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>{impacto_total:,.0f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>ON + OFF + Orgânico</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
-        <div class='neon-card neon-card-azul' style='background-color: {CORES['azul']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📈 CPM TOTAL</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_total:.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>ON + OFF Unificado</p>
+        <div class='neon-card neon-card-azul' style='background-color: {CORES['azul']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>📈 CPM TOTAL</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {cpm_total:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>ON + OFF Unificado</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
-        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 INVEST. MÍDIA OFF</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_off:,.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>TV, Rádio, OOH, Revista</p>
+        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>📺 INVEST. MÍDIA OFF</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {invest_off:,.2f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>TV, Rádio, OOH, Revista</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
         st.markdown(f"""
-        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>📺 CPM MÍDIA OFF</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_off:.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
+        <div class='neon-card neon-card-laranja' style='background-color: {CORES['laranja']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>📺 CPM MÍDIA OFF</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {cpm_off:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Custo por Mil Impactos</p>
         </div>
         """, unsafe_allow_html=True)
     
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # ========== LINHA 2: 4 CARDS MÍDIA ON + CPL ON ==========
+    col5, col6, col7, col8 = st.columns(4)
+    
     with col5:
         st.markdown(f"""
-        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 INVEST. MÍDIA ON</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {invest_on:,.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Patrocinado, Portal (Digital)</p>
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>💻 INVEST. MÍDIA ON</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {invest_on:,.2f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Patrocinado, Portal (Digital)</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col6:
         st.markdown(f"""
-        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-            <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💻 CPM MÍDIA ON</p>
-            <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpm_on:.2f}</p>
-            <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Mil Impactos</p>
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>💻 CPM MÍDIA ON</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {cpm_on:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Custo por Mil Impactos</p>
         </div>
         """, unsafe_allow_html=True)
     
-    # ========== LINHA 2: LEADS + CPL + PRODUÇÃO (3 cards centralizados) ==========
+    with col7:
+        st.markdown(f"""
+        <div class='neon-card neon-card-roxo' style='background-color: {CORES['roxo']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>💻 CPL MÍDIA ON</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {cpl_on:.2f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Custo por Lead Digital</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col8:
+        st.markdown(f"""
+        <div class='neon-card neon-card-verde' style='background-color: {CORES['verde_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>🎯 LEADS TOTAL</p>
+            <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>{leads_total:,.0f}</p>
+            <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Total de Leads</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # ========== LINHA 3: CPL MÉDIO + CUSTO DE PRODUÇÃO (centralizados) ==========
     st.markdown("<br>", unsafe_allow_html=True)
     
     col_center1, col_center2, col_center3 = st.columns([0.5, 3, 0.5])
     
     with col_center2:
-        col_a, col_b, col_c = st.columns(3)
+        col_a, col_b = st.columns(2)
         
         with col_a:
             st.markdown(f"""
-            <div class='neon-card neon-card-verde' style='background-color: {CORES['verde_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 110px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>🎯 LEADS</p>
-                <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>{leads_total:,.0f}</p>
-                <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Total de Leads</p>
+            <div class='neon-card neon-card-cinza' style='background-color: {CORES['cinza_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>💵 CPL MÉDIO</p>
+                <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {cpl_medio:.2f}</p>
+                <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Custo por Lead (Consolidado)</p>
             </div>
             """, unsafe_allow_html=True)
         
         with col_b:
             st.markdown(f"""
-            <div class='neon-card neon-card-cinza' style='background-color: {CORES['cinza_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 110px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: white; margin: 0; font-size: 11px; opacity: 0.9;'>💵 CPL MÉDIO</p>
-                <p style='color: white; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {cpl_medio:.2f}</p>
-                <p style='color: white; margin: 0; font-size: 9px; opacity: 0.7;'>Custo por Lead</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col_c:
-            st.markdown(f"""
-            <div class='neon-card neon-card-claro' style='background-color: {CORES['verde_claro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 110px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
-                <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 11px; opacity: 0.9; font-weight: bold;'>🎬 CUSTO DE PRODUÇÃO</p>
-                <p style='color: {CORES['verde_escuro']}; margin: 5px 0 0 0; font-size: 22px; font-weight: bold;'>R$ {custo_producao:,.2f}</p>
-                <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 9px; opacity: 0.7;'>Meio = Produção</p>
+            <div class='neon-card neon-card-claro' style='background-color: {CORES['verde_claro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 12px; opacity: 0.9; font-weight: bold;'>🎬 CUSTO DE PRODUÇÃO</p>
+                <p style='color: {CORES['verde_escuro']}; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {custo_producao:,.2f}</p>
+                <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 10px; opacity: 0.7;'>Meio = Produção</p>
             </div>
             """, unsafe_allow_html=True)
     
-    # ========== LINHA 3: TAXAS DE EMAIL (quando houver dados) ==========
+    # ========== LINHA 4: TAXAS DE EMAIL (quando houver dados) ==========
     if 'Taxa de Abertura' in df.columns and 'Taxa de Clique' in df.columns:
         df_email = df[df['Taxa de Abertura'].notna() & df['Taxa de Clique'].notna()]
         
@@ -1045,11 +1066,11 @@ def dashboard_visao_geral(df):
     # ========== DESCRIÇÕES DAS MÉTRICAS ==========
     st.markdown("### 📘 Entendendo as Métricas")
     
-    col_desc1, col_desc2, col_desc3 = st.columns(3)
+    col_desc1, col_desc2, col_desc3, col_desc4 = st.columns(4)
     
     with col_desc1:
         st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 160px;'>
             <h5 style='color: {CORES['turquesa']}; margin: 0;'>📊 IMPACTO TOTAL</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
                 Soma de todos os impactos (ON + OFF + Orgânico).<br>
@@ -1060,7 +1081,7 @@ def dashboard_visao_geral(df):
     
     with col_desc2:
         st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 160px;'>
             <h5 style='color: {CORES['laranja']}; margin: 0;'>📺 MÍDIA OFF</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
                 <strong>Investimento:</strong> TV, Rádio, OOH e Revista.<br>
@@ -1071,11 +1092,23 @@ def dashboard_visao_geral(df):
     
     with col_desc3:
         st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 150px;'>
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 160px;'>
             <h5 style='color: {CORES['roxo']}; margin: 0;'>💻 MÍDIA ON</h5>
             <p style='font-size: 12px; color: #666; margin-top: 5px;'>
                 <strong>Investimento:</strong> Patrocinado e Portal (Digital).<br>
-                <strong>CPM ON:</strong> Custo por mil impactos da mídia ON.
+                <strong>CPM ON:</strong> Custo por mil impactos.<br>
+                <strong>CPL ON:</strong> Custo por lead digital.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col_desc4:
+        st.markdown(f"""
+        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 160px;'>
+            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>🎯 LEADS & CPL</h5>
+            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+                <strong>Leads:</strong> Total de leads gerados.<br>
+                <strong>CPL Médio:</strong> Custo por lead consolidado.
             </p>
         </div>
         """, unsafe_allow_html=True)
@@ -1241,6 +1274,7 @@ st.markdown(f"""
     <span>🕒 {datetime.now().strftime('%d/%m/%Y %H:%M')}</span> • 
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['azul']};'>CPM Total</span> • 
-    <span>v24.0 - Build Corrigida</span>
+    <span style='color: {CORES['roxo']};'>CPL ON</span> • 
+    <span>v25.0 - Build com CPL ON</span>
 </div>
 """, unsafe_allow_html=True)
