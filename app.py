@@ -59,7 +59,7 @@ def get_impacto_column(df, categoria):
         for col in df.columns:
             if 'impacto' in col.lower() and 'orgânico' in col.lower():
                 return col
-        return 'Impacto Ogânico (impressões e entrega de email)' if 'Impacto Ogânico (impressões e entrega de email)' in df.columns else None
+        return 'Impacto Orgânico (impressões e entrega de email)' if 'Impacto Orgânico (impressões e entrega de email)' in df.columns else None
     else:
         return 'Impacto Pago' if 'Impacto Pago' in df.columns else None
 
@@ -252,7 +252,7 @@ def criar_cards_consolidados(df):
             col_impacto_org = col
             break
     if not col_impacto_org:
-        col_impacto_org = 'Impacto Ogânico (impressões e entrega de email)' if 'Impacto Ogânico (impressões e entrega de email)' in df.columns else None
+        col_impacto_org = 'Impacto Orgânico (impressões e entrega de email)' if 'Impacto Orgânico (impressões e entrega de email)' in df.columns else None
     
     col_invest = 'Investimento' if 'Investimento' in df.columns else None
     col_leads = 'Leads' if 'Leads' in df.columns else None
@@ -309,6 +309,39 @@ def criar_cards_consolidados(df):
     df_producao = df[df['Meio'] == 'Produção'] if 'Meio' in df.columns else pd.DataFrame()
     custo_producao = df_producao[col_invest].sum() if col_invest and not df_producao.empty else 0
     custo_producao = custo_producao if not pd.isna(custo_producao) else 0
+    
+        # ========== EFICIÊNCIA CORRIGIDA ==========
+    # Garantir que os valores são números (converter para float)
+    impacto_total_on_off = float(impacto_total_on_off) if impacto_total_on_off else 0
+    investimento_total_on_off = float(investimento_total_on_off) if investimento_total_on_off else 0
+    
+    # # DEBUG: Mostrar valores para verificar (remove depois)
+    # with st.expander("🔍 Debug - Verificar valores (clique para expandir)"):
+    #     st.write(f"**Impacto Total ON+OFF:** {impacto_total_on_off:,.0f}")
+    #     st.write(f"**Investimento Total ON+OFF:** R$ {investimento_total_on_off:,.2f}")
+    #     if investimento_total_on_off > 0:
+    #         st.write(f"**Cálculo:** {impacto_total_on_off:,.0f} / {investimento_total_on_off:,.2f} = {impacto_total_on_off / investimento_total_on_off:.1f}")
+    
+    # Eficiência = Impactos gerados por cada real investido
+    eficiencia = (impacto_total_on_off / investimento_total_on_off) if investimento_total_on_off > 0 else 0
+    
+    # Definir cores e status baseado na eficiência
+    if eficiencia >= 60:
+        cor_eficiencia = CORES['sucesso']
+        bg_opacity = '20'
+        texto_status = "🚀 Excelente"
+    elif eficiencia >= 40:
+        cor_eficiencia = CORES['verde_claro']
+        bg_opacity = '30'
+        texto_status = "✅ Bom"
+    elif eficiencia >= 20:
+        cor_eficiencia = CORES['alerta']
+        bg_opacity = '30'
+        texto_status = "⚠️ Regular"
+    else:
+        cor_eficiencia = CORES['erro']
+        bg_opacity = '20'
+        texto_status = "🔴 Baixo"
     
     # ========== MÉTRICAS CONSOLIDADAS ==========
     st.markdown("#### 📊 MÉTRICAS CONSOLIDADAS")
@@ -393,17 +426,18 @@ def criar_cards_consolidados(df):
         </div>
         """, unsafe_allow_html=True)
     
-    # ========== LINHA 3: CPL MÉDIO + CUSTO DE PRODUÇÃO (centralizados) ==========
+    # ========== LINHA 3: CPL MÉDIO + EFICIÊNCIA + CUSTO DE PRODUÇÃO ==========
     st.markdown("<br>", unsafe_allow_html=True)
     
-    col_center1, col_center2, col_center3 = st.columns([0.5, 3, 0.5])
+    # Agora com 3 cards (colunas proporcionais)
+    col_center1, col_center2, col_center3 = st.columns([0.5, 4, 0.5])
     
     with col_center2:
-        col_a, col_b = st.columns(2)
+        col_a, col_b, col_c = st.columns(3)
         
         with col_a:
             st.markdown(f"""
-            <div class='neon-card neon-card-cinza' style='background-color: {CORES['cinza_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <div class='neon-card neon-card-cinza' style='background-color: {CORES['cinza_escuro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
                 <p style='color: white; margin: 0; font-size: 12px; opacity: 0.9;'>💵 CPL MÉDIO</p>
                 <p style='color: white; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {cpl_medio:.2f}</p>
                 <p style='color: white; margin: 0; font-size: 10px; opacity: 0.7;'>Custo por Lead (Consolidado)</p>
@@ -412,7 +446,17 @@ def criar_cards_consolidados(df):
         
         with col_b:
             st.markdown(f"""
-            <div class='neon-card neon-card-claro' style='background-color: {CORES['verde_claro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 120px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+            <div class='neon-card neon-card-verde' style='background-color: {cor_eficiencia}{bg_opacity}; padding: 18px; border-radius: 10px; text-align: center; border-left: 4px solid {cor_eficiencia}; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
+                <p style='color: {CORES['texto_escuro']}; margin: 0; font-size: 12px; opacity: 0.9; font-weight: bold;'>⚡ EFICIÊNCIA</p>
+                <p style='color: {cor_eficiencia}; margin: 8px 0 0 0; font-size: 28px; font-weight: bold;'>{eficiencia:.1f}</p>
+                <p style='color: {CORES['cinza_escuro']}; margin: 0; font-size: 9px;'>Impactos por R$ 1,00</p>
+                <p style='color: {cor_eficiencia}; margin: 3px 0 0 0; font-size: 9px; font-weight: bold;'>{texto_status}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col_c:
+            st.markdown(f"""
+            <div class='neon-card neon-card-claro' style='background-color: {CORES['verde_claro']}; padding: 18px; border-radius: 10px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); height: 130px; display: flex; flex-direction: column; justify-content: center; transition: all 0.3s ease-in-out; cursor: pointer;'>
                 <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 12px; opacity: 0.9; font-weight: bold;'>🎬 CUSTO DE PRODUÇÃO</p>
                 <p style='color: {CORES['verde_escuro']}; margin: 8px 0 0 0; font-size: 24px; font-weight: bold;'>R$ {custo_producao:,.2f}</p>
                 <p style='color: {CORES['verde_escuro']}; margin: 0; font-size: 10px; opacity: 0.7;'>Meio = Produção</p>
@@ -425,8 +469,8 @@ def criar_cards_consolidados(df):
         
         if not df_email.empty:
             # Média simples das taxas (valores já em percentual)
-            taxa_abertura_media = df_email['Taxa de Abertura'].mean()*100
-            taxa_clique_media = df_email['Taxa de Clique'].mean()*100
+            taxa_abertura_media = df_email['Taxa de Abertura'].mean() * 100
+            taxa_clique_media = df_email['Taxa de Clique'].mean() * 100
             
             st.markdown("---")
             st.markdown(f"""
@@ -1066,7 +1110,7 @@ def dashboard_visao_geral(df):
     # ========== DESCRIÇÕES DAS MÉTRICAS ==========
     st.markdown("### 📘 Entendendo as Métricas")
     
-    col_desc1, col_desc2, col_desc3, col_desc4 = st.columns(4)
+    col_desc1, col_desc2, col_desc3 = st.columns(3)
     
     with col_desc1:
         st.markdown(f"""
@@ -1102,16 +1146,16 @@ def dashboard_visao_geral(df):
         </div>
         """, unsafe_allow_html=True)
     
-    with col_desc4:
-        st.markdown(f"""
-        <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 160px;'>
-            <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>🎯 LEADS & CPL</h5>
-            <p style='font-size: 12px; color: #666; margin-top: 5px;'>
-                <strong>Leads:</strong> Total de leads gerados.<br>
-                <strong>CPL Médio:</strong> Custo por lead consolidado.
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
+    # with col_desc4:
+    #     st.markdown(f"""
+    #     <div style='background-color: #f8f9fa; padding: 15px; border-radius: 10px; height: 160px;'>
+    #         <h5 style='color: {CORES['verde_escuro']}; margin: 0;'>⚡ EFICIÊNCIA</h5>
+    #         <p style='font-size: 12px; color: #666; margin-top: 5px;'>
+    #             Impactos por R$ 1.000 investido.<br>
+    #             <strong>> 100:</strong> Excelente | <strong>50-100:</strong> Bom | <strong>< 50:</strong> Precisa melhorar
+    #         </p>
+    #     </div>
+    #     """, unsafe_allow_html=True)
     
     st.markdown("---")
     
@@ -1275,6 +1319,7 @@ st.markdown(f"""
     <span style='color: {CORES['turquesa']};'>Cocred</span> • 
     <span style='color: {CORES['azul']};'>CPM Total</span> • 
     <span style='color: {CORES['roxo']};'>CPL ON</span> • 
-    <span>v25.0 - Build com CPL ON</span>
+    <span style='color: {CORES['verde_claro']};'>Eficiência</span> • 
+    <span>v25.1 - Build com Eficiência</span>
 </div>
 """, unsafe_allow_html=True)
